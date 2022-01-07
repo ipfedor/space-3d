@@ -112,23 +112,30 @@ module.exports = function() {
     }
 
     // Initialize the nebula parameters.
-    var rand = new rng.MT(hashcode(params.seed) + 2000);
+    var rand = new rng.MT(hashcode(params.seed) + Math.floor(new Date().getTime() % 9999));
     var nebulaParams = [];
-    while (params.nebulae) {
-      nebulaParams.push({
-        scale: rand.random() * 0.5 + 0.25,
-        color: hexToRgb(params.nebulaColor), // color from panel
-        intensity: rand.random() * 0.2 + 0.9,
-        falloff: rand.random() * 3.0 + 3.0,
-        offset: [
-          rand.random() * 2000 - 1000,
-          rand.random() * 2000 - 1000,
-          rand.random() * 2000 - 1000
-        ]
-      });
-      if (rand.random() < 0.5) {
-        break;
-      }
+    var beginColor = hexToRgb(params.nebulaColorBegin);
+    var endColor = hexToRgb(params.nebulaColorEnd);
+    var countNebulas = Math.floor(2 + rand.random() * 3); // 2 - 4 nebulas
+    if (params.nebulae) {
+        for(var ni=0; ni<countNebulas; ni++) {
+          var midleColor = [
+            Math.floor(beginColor[0] + ni * (endColor[0] - beginColor[0]) / (countNebulas - 1)),
+            Math.floor(beginColor[1] + ni * (endColor[1] - beginColor[1]) / (countNebulas - 1)),
+            Math.floor(beginColor[2] + ni * (endColor[2] - beginColor[2]) / (countNebulas - 1))
+          ];
+          nebulaParams.push({
+            scale: rand.random() * 0.5 + 0.25,
+            color: midleColor, // color from panel
+            intensity: rand.random() * 0.2 + 0.9,
+            falloff: rand.random() * 3.0 + 3.0,
+            offset: [
+              rand.random() * 2000 - 1000,
+              rand.random() * 2000 - 1000,
+              rand.random() * 2000 - 1000
+            ]
+          });
+        }
     }
 
     // Initialize the sun parameters.

@@ -30,7 +30,8 @@ window.onload = function() {
     this.sunFalloff = params.sunFalloff === undefined ? 100 : parseFloat(params.sunFalloff);
     this.nebulae = params.nebulae === undefined ? true : params.nebulae === "true";
     this.nebulaOpacity = params.nebulaOpacity === undefined ? 33 : parseInt(params.nebulaOpacity);
-    this.nebulaColor = params.nebulaColor === undefined ? '#ff0000' : params.nebulaColor;
+    this.nebulaColorBegin = params.nebulaColorBegin === undefined ? '#ff0000' : params.nebulaColorBegin;
+    this.nebulaColorEnd = params.nebulaColorEnd === undefined ? '#800000' : params.nebulaColorEnd;
     this.noiseScale = params.nebulaOpacity === undefined ? 5 : parseFloat(params.noiseScale);
     this.nebulaBrightness = params.nebulaBrightness === undefined ? 18 : parseInt(params.nebulaBrightness);
     this.resolution = parseInt(params.resolution) || 1024;
@@ -112,8 +113,12 @@ window.onload = function() {
     .name("Nebulae")
     .onChange(renderTextures);
   gui
-    .addColor(menu, 'nebulaColor')
-    .name("Nebula Color")
+    .addColor(menu, 'nebulaColorBegin')
+    .name("Nebula Color Begin")
+    .onChange(renderTextures);
+  gui
+    .addColor(menu, 'nebulaColorEnd')
+    .name("Nebula Color End")
     .onChange(renderTextures);
   gui
     .add(menu, "resolution", [256, 512, 1024, 2048, 4096])
@@ -161,7 +166,8 @@ window.onload = function() {
       stars: menu.stars,
       sun: menu.sun,
       sunFalloff: menu.sunFalloff,
-      nebulaColor: menu.nebulaColor,
+      nebulaColorBegin: menu.nebulaColorBegin,
+      nebulaColorEnd: menu.nebulaColorEnd,
       nebulae: menu.nebulae,
       resolution: menu.resolution,
       animationSpeed: menu.animationSpeed
@@ -190,7 +196,8 @@ window.onload = function() {
       stars: menu.stars,
       sun: menu.sun,
       sunFalloff: menu.sunFalloff,
-      nebulaColor: menu.nebulaColor,
+      nebulaColorBegin: menu.nebulaColorBegin,
+      nebulaColorEnd: menu.nebulaColorEnd,
       nebulae: menu.nebulae,
       resolution: menu.resolution
     });

@@ -17973,7 +17973,8 @@ window.onload = function() {
     this.sunFalloff = params.sunFalloff === undefined ? 100 : parseFloat(params.sunFalloff);
     this.nebulae = params.nebulae === undefined ? true : params.nebulae === "true";
     this.nebulaOpacity = params.nebulaOpacity === undefined ? 33 : parseInt(params.nebulaOpacity);
-    this.nebulaColor = params.nebulaColor === undefined ? '#ff0000' : params.nebulaColor;
+    this.nebulaColorBegin = params.nebulaColorBegin === undefined ? '#ff0000' : params.nebulaColorBegin;
+    this.nebulaColorEnd = params.nebulaColorEnd === undefined ? '#800000' : params.nebulaColorEnd;
     this.noiseScale = params.nebulaOpacity === undefined ? 5 : parseFloat(params.noiseScale);
     this.nebulaBrightness = params.nebulaBrightness === undefined ? 18 : parseInt(params.nebulaBrightness);
     this.resolution = parseInt(params.resolution) || 1024;
@@ -18055,8 +18056,12 @@ window.onload = function() {
     .name("Nebulae")
     .onChange(renderTextures);
   gui
-    .addColor(menu, 'nebulaColor')
-    .name("Nebula Color")
+    .addColor(menu, 'nebulaColorBegin')
+    .name("Nebula Color Begin")
+    .onChange(renderTextures);
+  gui
+    .addColor(menu, 'nebulaColorEnd')
+    .name("Nebula Color End")
     .onChange(renderTextures);
   gui
     .add(menu, "resolution", [256, 512, 1024, 2048, 4096])
@@ -18104,7 +18109,8 @@ window.onload = function() {
       stars: menu.stars,
       sun: menu.sun,
       sunFalloff: menu.sunFalloff,
-      nebulaColor: menu.nebulaColor,
+      nebulaColorBegin: menu.nebulaColorBegin,
+      nebulaColorEnd: menu.nebulaColorEnd,
       nebulae: menu.nebulae,
       resolution: menu.resolution,
       animationSpeed: menu.animationSpeed
@@ -18133,7 +18139,8 @@ window.onload = function() {
       stars: menu.stars,
       sun: menu.sun,
       sunFalloff: menu.sunFalloff,
-      nebulaColor: menu.nebulaColor,
+      nebulaColorBegin: menu.nebulaColorBegin,
+      nebulaColorEnd: menu.nebulaColorEnd,
       nebulae: menu.nebulae,
       resolution: menu.resolution
     });
@@ -18423,23 +18430,30 @@ module.exports = function() {
     }
 
     // Initialize the nebula parameters.
-    var rand = new rng.MT(hashcode(params.seed) + 2000);
+    var rand = new rng.MT(hashcode(params.seed) + Math.floor(new Date().getTime() % 9999));
     var nebulaParams = [];
-    while (params.nebulae) {
-      nebulaParams.push({
-        scale: rand.random() * 0.5 + 0.25,
-        color: hexToRgb(params.nebulaColor), // color from panel
-        intensity: rand.random() * 0.2 + 0.9,
-        falloff: rand.random() * 3.0 + 3.0,
-        offset: [
-          rand.random() * 2000 - 1000,
-          rand.random() * 2000 - 1000,
-          rand.random() * 2000 - 1000
-        ]
-      });
-      if (rand.random() < 0.5) {
-        break;
-      }
+    var beginColor = hexToRgb(params.nebulaColorBegin);
+    var endColor = hexToRgb(params.nebulaColorEnd);
+    var countNebulas = Math.floor(2 + rand.random() * 3); // 2 - 4 nebulas
+    if (params.nebulae) {
+        for(var ni=0; ni<countNebulas; ni++) {
+          var midleColor = [
+            Math.floor(beginColor[0] + ni * (endColor[0] - beginColor[0]) / (countNebulas - 1)),
+            Math.floor(beginColor[1] + ni * (endColor[1] - beginColor[1]) / (countNebulas - 1)),
+            Math.floor(beginColor[2] + ni * (endColor[2] - beginColor[2]) / (countNebulas - 1))
+          ];
+          nebulaParams.push({
+            scale: rand.random() * 0.5 + 0.25,
+            color: midleColor, // color from panel
+            intensity: rand.random() * 0.2 + 0.9,
+            falloff: rand.random() * 3.0 + 3.0,
+            offset: [
+              rand.random() * 2000 - 1000,
+              rand.random() * 2000 - 1000,
+              rand.random() * 2000 - 1000
+            ]
+          });
+        }
     }
 
     // Initialize the sun parameters.
