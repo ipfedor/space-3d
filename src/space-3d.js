@@ -121,9 +121,9 @@ module.exports = function() {
     if (params.nebulae) {
         for(var ni=0; ni<countNebulas; ni++) {
           var midleColor = [
-            Math.floor(beginColor[0] + ni * (endColor[0] - beginColor[0]) / (countNebulas - 1)),
-            Math.floor(beginColor[1] + ni * (endColor[1] - beginColor[1]) / (countNebulas - 1)),
-            Math.floor(beginColor[2] + ni * (endColor[2] - beginColor[2]) / (countNebulas - 1))
+            (beginColor[0] + ni * (endColor[0] - beginColor[0]) / (countNebulas - 1)) / 255,
+            (beginColor[1] + ni * (endColor[1] - beginColor[1]) / (countNebulas - 1)) / 255,
+            (beginColor[2] + ni * (endColor[2] - beginColor[2]) / (countNebulas - 1)) / 255
           ];
           nebulaParams.push({
             scale: rand.random() * 0.5 + 0.25,
