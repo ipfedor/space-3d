@@ -17973,6 +17973,7 @@ window.onload = function() {
     this.sunFalloff = params.sunFalloff === undefined ? 100 : parseFloat(params.sunFalloff);
     this.nebulae = params.nebulae === undefined ? true : params.nebulae === "true";
     this.nebulaOpacity = params.nebulaOpacity === undefined ? 33 : parseInt(params.nebulaOpacity);
+    this.nebulaColor = params.nebulaColor === undefined ? '#ff0000' : params.nebulaColor;
     this.noiseScale = params.nebulaOpacity === undefined ? 5 : parseFloat(params.noiseScale);
     this.nebulaBrightness = params.nebulaBrightness === undefined ? 18 : parseInt(params.nebulaBrightness);
     this.resolution = parseInt(params.resolution) || 1024;
@@ -18054,6 +18055,10 @@ window.onload = function() {
     .name("Nebulae")
     .onChange(renderTextures);
   gui
+    .addColor(menu, 'nebulaColor')
+    .name("Nebula Color")
+    .onChange(renderTextures);
+  gui
     .add(menu, "resolution", [256, 512, 1024, 2048, 4096])
     .name("Resolution")
     .onChange(renderTextures);
@@ -18099,6 +18104,7 @@ window.onload = function() {
       stars: menu.stars,
       sun: menu.sun,
       sunFalloff: menu.sunFalloff,
+      nebulaColor: menu.nebulaColor,
       nebulae: menu.nebulae,
       resolution: menu.resolution,
       animationSpeed: menu.animationSpeed
@@ -18127,6 +18133,7 @@ window.onload = function() {
       stars: menu.stars,
       sun: menu.sun,
       sunFalloff: menu.sunFalloff,
+      nebulaColor: menu.nebulaColor,
       nebulae: menu.nebulae,
       resolution: menu.resolution
     });
@@ -18302,7 +18309,6 @@ function buildQuad(gl, program) {
 }
 
 },{"./util.js":96,"./webgl.js":97,"gl-matrix":7}],95:[function(require,module,exports){
-(function (__dirname){
 // jshint -W097
 // jshint undef: true, unused: true
 /* globals require,document,__dirname,Float32Array,module*/
@@ -18347,7 +18353,6 @@ module.exports = function() {
       self.gl,
       "#version 100\r\nprecision highp float;\r\n\r\nuniform mat4 uModel;\r\nuniform mat4 uView;\r\nuniform mat4 uProjection;\r\n\r\nattribute vec3 aPosition;\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\r\n    pos = (uModel * vec4(aPosition, 1)).xyz;\r\n}\r\n\r\n\r\n__split__\r\n\r\n\r\n#version 100\r\nprecision highp float;\r\n\r\nuniform vec3 uPosition;\r\nuniform vec3 uColor;\r\nuniform float uSize;\r\nuniform float uFalloff;\r\n\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    vec3 posn = normalize(pos);\r\n    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);\r\n    float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);\r\n    c += pow(d, uFalloff) * 0.5;\r\n    vec3 color = mix(uColor, vec3(1,1,1), c);\r\n    gl_FragColor = vec4(color, c);\r\n\r\n}\r\n"
     );
-    console.log(__dirname + "/glsl/star.glsl");
     self.pSun = util.loadProgram(
       self.gl,
       "#version 100\r\nprecision highp float;\r\n\r\nuniform mat4 uModel;\r\nuniform mat4 uView;\r\nuniform mat4 uProjection;\r\n\r\nattribute vec3 aPosition;\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\r\n    pos = (uModel * vec4(aPosition, 1)).xyz;\r\n}\r\n\r\n\r\n__split__\r\n\r\n\r\n#version 100\r\nprecision highp float;\r\n\r\nuniform vec3 uPosition;\r\nuniform vec3 uColor;\r\nuniform float uSize;\r\nuniform float uFalloff;\r\n\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    vec3 posn = normalize(pos);\r\n    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);\r\n    float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);\r\n    c += pow(d, uFalloff) * 0.5;\r\n    vec3 color = mix(uColor, vec3(1,1,1), c);\r\n    gl_FragColor = vec4(color, c);\r\n\r\n}\r\n"
@@ -18405,7 +18410,7 @@ module.exports = function() {
     var rand = new rng.MT(hashcode(params.seed) + 3000);
     var starParams = [];
     while (params.stars) {
-      var cl = shuffle([1, rand.random(), rand.random()]); // random color stars with one main 
+      var cl = shuffle([1, rand.random(), rand.random()]); // random color stars with one color main 
       starParams.push({
         pos: randomVec3(rand),
         color: cl,
@@ -18423,7 +18428,7 @@ module.exports = function() {
     while (params.nebulae) {
       nebulaParams.push({
         scale: rand.random() * 0.5 + 0.25,
-        color: [rand.random(), rand.random(), rand.random()],
+        color: hexToRgb(params.nebulaColor), // color from panel
         intensity: rand.random() * 0.2 + 0.9,
         falloff: rand.random() * 3.0 + 3.0,
         offset: [
@@ -18521,7 +18526,6 @@ module.exports = function() {
         self.pStar.setUniform("uPosition", "3fv", s.pos);
         self.pStar.setUniform("uColor", "3fv", s.color);
         self.pStar.setUniform("uSize", "1f", s.size);
-          console.log(s, self.pStar);
         self.pStar.setUniform("uFalloff", "1f", s.falloff);
         self.rStar.render();
       }
@@ -18779,7 +18783,24 @@ function shuffle(array) {
 
   return array;
 }
-}).call(this,"/src")
+
+function componentToHex(c) {
+  var hex = c.toString(16);
+  return hex.length == 1 ? "0" + hex : hex;
+}
+
+function rgbToHex(r, g, b) {
+  return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+function hexToRgb(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? [
+    parseInt(result[1], 16),
+    parseInt(result[2], 16),
+    parseInt(result[3], 16)
+  ] : [1, 1, 1];
+}
 },{"./util.js":96,"./webgl.js":97,"gl-matrix":7,"rng":84}],96:[function(require,module,exports){
 (function (Buffer){
 // jshint -W097

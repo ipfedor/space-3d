@@ -42,7 +42,6 @@ module.exports = function() {
       self.gl,
       fs.readFileSync(__dirname + "/glsl/star.glsl", "utf8")
     );
-    console.log(__dirname + "/glsl/star.glsl");
     self.pSun = util.loadProgram(
       self.gl,
       fs.readFileSync(__dirname + "/glsl/sun.glsl", "utf8")
@@ -100,7 +99,7 @@ module.exports = function() {
     var rand = new rng.MT(hashcode(params.seed) + 3000);
     var starParams = [];
     while (params.stars) {
-      var cl = shuffle([1, rand.random(), rand.random()]); // random color stars with one main 
+      var cl = shuffle([1, rand.random(), rand.random()]); // random color stars with one color main 
       starParams.push({
         pos: randomVec3(rand),
         color: cl,
@@ -118,7 +117,7 @@ module.exports = function() {
     while (params.nebulae) {
       nebulaParams.push({
         scale: rand.random() * 0.5 + 0.25,
-        color: [rand.random(), rand.random(), rand.random()],
+        color: hexToRgb(params.nebulaColor), // color from panel
         intensity: rand.random() * 0.2 + 0.9,
         falloff: rand.random() * 3.0 + 3.0,
         offset: [
@@ -216,7 +215,6 @@ module.exports = function() {
         self.pStar.setUniform("uPosition", "3fv", s.pos);
         self.pStar.setUniform("uColor", "3fv", s.color);
         self.pStar.setUniform("uSize", "1f", s.size);
-          console.log(s, self.pStar);
         self.pStar.setUniform("uFalloff", "1f", s.falloff);
         self.rStar.render();
       }
@@ -473,4 +471,22 @@ function shuffle(array) {
   }
 
   return array;
+}
+
+function componentToHex(c) {
+  var hex = c.toString(16);
+  return hex.length == 1 ? "0" + hex : hex;
+}
+
+function rgbToHex(r, g, b) {
+  return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+function hexToRgb(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? [
+    parseInt(result[1], 16),
+    parseInt(result[2], 16),
+    parseInt(result[3], 16)
+  ] : [1, 1, 1];
 }
