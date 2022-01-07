@@ -28,7 +28,7 @@ module.exports = function(renderCanvas) {
             var c = canvases[keys[i]];
             self.textures[keys[i]] = new webgl.Texture(self.gl, 0, c, c.width, c.height, {
                 min: self.gl.LINEAR_MIPMAP_LINEAR,
-                mag: self.gl.LINEAR,
+                mag: self.gl.LINEAR
             });
         }
     };

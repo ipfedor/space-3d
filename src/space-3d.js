@@ -138,7 +138,7 @@ module.exports = function() {
         pos: randomVec3(rand),
         color: [rand.random(), rand.random(), rand.random()],
         size: rand.random() * 0.0001 + 0.0001,
-        falloff: rand.random() * 16.0 + 8.0
+        falloff: params.sunFalloff
       });
     }
 

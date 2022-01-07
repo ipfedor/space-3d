@@ -27,8 +27,11 @@ window.onload = function() {
       params.pointStars === undefined ? true : params.pointStars === "true";
     this.stars = params.stars === undefined ? true : params.stars === "true";
     this.sun = params.sun === undefined ? true : params.sun === "true";
-    this.nebulae =
-      params.nebulae === undefined ? true : params.nebulae === "true";
+    this.sunFalloff = params.sunFalloff === undefined ? 100 : parseFloat(params.sunFalloff);
+    this.nebulae = params.nebulae === undefined ? true : params.nebulae === "true";
+    this.nebulaOpacity = params.nebulaOpacity === undefined ? 33 : parseInt(params.nebulaOpacity);
+    this.noiseScale = params.nebulaOpacity === undefined ? 5 : parseFloat(params.noiseScale);
+    this.nebulaBrightness = params.nebulaBrightness === undefined ? 18 : parseInt(params.nebulaBrightness);
     this.resolution = parseInt(params.resolution) || 1024;
     this.animationSpeed =
       params.animationSpeed === undefined
@@ -100,6 +103,10 @@ window.onload = function() {
     .name("Sun")
     .onChange(renderTextures);
   gui
+    .add(menu, "sunFalloff", 50, 250, 1)
+    .name("Sun Falloff")
+    .onFinishChange(renderTextures);
+  gui
     .add(menu, "nebulae")
     .name("Nebulae")
     .onChange(renderTextures);
@@ -148,6 +155,7 @@ window.onload = function() {
       pointStars: menu.pointStars,
       stars: menu.stars,
       sun: menu.sun,
+      sunFalloff: menu.sunFalloff,
       nebulae: menu.nebulae,
       resolution: menu.resolution,
       animationSpeed: menu.animationSpeed
@@ -175,6 +183,7 @@ window.onload = function() {
       pointStars: menu.pointStars,
       stars: menu.stars,
       sun: menu.sun,
+      sunFalloff: menu.sunFalloff,
       nebulae: menu.nebulae,
       resolution: menu.resolution
     });
