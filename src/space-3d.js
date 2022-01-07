@@ -42,6 +42,7 @@ module.exports = function() {
       self.gl,
       fs.readFileSync(__dirname + "/glsl/star.glsl", "utf8")
     );
+    console.log(__dirname + "/glsl/star.glsl");
     self.pSun = util.loadProgram(
       self.gl,
       fs.readFileSync(__dirname + "/glsl/sun.glsl", "utf8")
@@ -99,11 +100,12 @@ module.exports = function() {
     var rand = new rng.MT(hashcode(params.seed) + 3000);
     var starParams = [];
     while (params.stars) {
+      var cl = shuffle([1, rand.random(), rand.random()]); // random color stars with one main 
       starParams.push({
         pos: randomVec3(rand),
-        color: [1, 1, 1],
-        size: 0.0,
-        falloff: rand.random() * Math.pow(2, 20) + Math.pow(2, 20)
+        color: cl,
+        size: rand.random() * 0.00000005 + 0.00000005,
+        falloff: rand.random() * 200000 + 10000
       });
       if (rand.random() < 0.01) {
         break;
@@ -214,6 +216,7 @@ module.exports = function() {
         self.pStar.setUniform("uPosition", "3fv", s.pos);
         self.pStar.setUniform("uColor", "3fv", s.color);
         self.pStar.setUniform("uSize", "1f", s.size);
+          console.log(s, self.pStar);
         self.pStar.setUniform("uFalloff", "1f", s.falloff);
         self.rStar.render();
       }
@@ -452,4 +455,22 @@ function hashcode(str) {
     hash += (i + 1) * char;
   }
   return hash;
+}
+
+function shuffle(array) {
+  let currentIndex = array.length,  randomIndex;
+
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
 }

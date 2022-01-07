@@ -18302,6 +18302,7 @@ function buildQuad(gl, program) {
 }
 
 },{"./util.js":96,"./webgl.js":97,"gl-matrix":7}],95:[function(require,module,exports){
+(function (__dirname){
 // jshint -W097
 // jshint undef: true, unused: true
 /* globals require,document,__dirname,Float32Array,module*/
@@ -18344,8 +18345,9 @@ module.exports = function() {
     );
     self.pStar = util.loadProgram(
       self.gl,
-      "#version 100\r\nprecision highp float;\r\n\r\nuniform mat4 uModel;\r\nuniform mat4 uView;\r\nuniform mat4 uProjection;\r\n\r\nattribute vec3 aPosition;\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\r\n    pos = (uModel * vec4(aPosition, 1)).xyz;\r\n}\r\n\r\n\r\n__split__\r\n\r\n\r\n#version 100\r\nprecision highp float;\r\n\r\nuniform vec3 uPosition;\r\nuniform vec3 uColor;\r\nuniform float uSize;\r\nuniform float uFalloff;\r\n\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    vec3 posn = normalize(pos);\r\n    float d = 1.0 - clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);\r\n    float i = exp(-(d - uSize) * uFalloff);\r\n    float o = clamp(i, 0.0, 1.0);\r\n    gl_FragColor = vec4(uColor + i, o);\r\n\r\n}\r\n"
+      "#version 100\r\nprecision highp float;\r\n\r\nuniform mat4 uModel;\r\nuniform mat4 uView;\r\nuniform mat4 uProjection;\r\n\r\nattribute vec3 aPosition;\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\r\n    pos = (uModel * vec4(aPosition, 1)).xyz;\r\n}\r\n\r\n\r\n__split__\r\n\r\n\r\n#version 100\r\nprecision highp float;\r\n\r\nuniform vec3 uPosition;\r\nuniform vec3 uColor;\r\nuniform float uSize;\r\nuniform float uFalloff;\r\n\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    vec3 posn = normalize(pos);\r\n    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);\r\n    float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);\r\n    c += pow(d, uFalloff) * 0.5;\r\n    vec3 color = mix(uColor, vec3(1,1,1), c);\r\n    gl_FragColor = vec4(color, c);\r\n\r\n}\r\n"
     );
+    console.log(__dirname + "/glsl/star.glsl");
     self.pSun = util.loadProgram(
       self.gl,
       "#version 100\r\nprecision highp float;\r\n\r\nuniform mat4 uModel;\r\nuniform mat4 uView;\r\nuniform mat4 uProjection;\r\n\r\nattribute vec3 aPosition;\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\r\n    pos = (uModel * vec4(aPosition, 1)).xyz;\r\n}\r\n\r\n\r\n__split__\r\n\r\n\r\n#version 100\r\nprecision highp float;\r\n\r\nuniform vec3 uPosition;\r\nuniform vec3 uColor;\r\nuniform float uSize;\r\nuniform float uFalloff;\r\n\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    vec3 posn = normalize(pos);\r\n    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);\r\n    float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);\r\n    c += pow(d, uFalloff) * 0.5;\r\n    vec3 color = mix(uColor, vec3(1,1,1), c);\r\n    gl_FragColor = vec4(color, c);\r\n\r\n}\r\n"
@@ -18403,11 +18405,12 @@ module.exports = function() {
     var rand = new rng.MT(hashcode(params.seed) + 3000);
     var starParams = [];
     while (params.stars) {
+      var cl = shuffle([1, rand.random(), rand.random()]); // random color stars with one main 
       starParams.push({
         pos: randomVec3(rand),
-        color: [1, 1, 1],
-        size: 0.0,
-        falloff: rand.random() * Math.pow(2, 20) + Math.pow(2, 20)
+        color: cl,
+        size: rand.random() * 0.00000005 + 0.00000005,
+        falloff: rand.random() * 200000 + 10000
       });
       if (rand.random() < 0.01) {
         break;
@@ -18518,6 +18521,7 @@ module.exports = function() {
         self.pStar.setUniform("uPosition", "3fv", s.pos);
         self.pStar.setUniform("uColor", "3fv", s.color);
         self.pStar.setUniform("uSize", "1f", s.size);
+          console.log(s, self.pStar);
         self.pStar.setUniform("uFalloff", "1f", s.falloff);
         self.rStar.render();
       }
@@ -18758,6 +18762,24 @@ function hashcode(str) {
   return hash;
 }
 
+function shuffle(array) {
+  let currentIndex = array.length,  randomIndex;
+
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+}
+}).call(this,"/src")
 },{"./util.js":96,"./webgl.js":97,"gl-matrix":7,"rng":84}],96:[function(require,module,exports){
 (function (Buffer){
 // jshint -W097
