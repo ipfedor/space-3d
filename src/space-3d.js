@@ -112,7 +112,8 @@ module.exports = function() {
     }
 
     // Initialize the nebula parameters.
-    var rand = new rng.MT(hashcode(params.seed) + Math.floor(new Date().getTime() % 9999));
+    //var rand = new rng.MT(hashcode(params.seed) + Math.floor(new Date().getTime() % 9999));
+    var rand = new rng.MT(hashcode(params.seed) + 2000);
     var nebulaParams = [];
     var beginColor = hexToRgb(params.nebulaColorBegin);
     var endColor = hexToRgb(params.nebulaColorEnd);
