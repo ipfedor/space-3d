@@ -11483,6 +11483,7 @@ window.onload = function() {
     this.stars = params.stars === undefined ? true : params.stars === "true";
     this.sun = params.sun === undefined ? true : params.sun === "true";
     this.sunFalloff = params.sunFalloff === undefined ? 100 : parseFloat(params.sunFalloff);
+    this.jpegQuality = params.jpegQuality === undefined ? 0.85 : parseFloat(params.jpegQuality);
     this.nebulae = params.nebulae === undefined ? true : params.nebulae === "true";
     this.nebulaOpacity = params.nebulaOpacity === undefined ? 33 : parseInt(params.nebulaOpacity);
     this.nebulaColorBegin = params.nebulaColorBegin === undefined ? '#ff0000' : params.nebulaColorBegin;
@@ -11509,7 +11510,24 @@ window.onload = function() {
         saveAs(blob, "skybox.zip");
       });
     };
-    this._saveCubemap = function() {
+    this.saveSkyboxJpg = function() {
+      const zip = new JSZip();
+      for (const name of ["front", "back", "left", "right", "top", "bottom"]) {
+        const canvas = document.getElementById(`texture-${name}`);
+        const data = canvas.toDataURL('image/jpeg', this.jpegQuality).split(",")[1];
+        zip.file(`${name}.jpg`, data, { base64: true });
+      }
+      if (this.resolution <= 2048) {
+        const cubemapData = this._saveCubemap('image/jpeg', this.jpegQuality).split(",")[1];
+        zip.file('cubemap.jpg', cubemapData, { base64: true });    
+      }
+      zip.generateAsync({ type: "blob" }).then(blob => {
+        saveAs(blob, "skybox.zip");
+      });
+    };
+    this._saveCubemap = function(type, params) {
+      type = type || "image/png";
+      params = params || null;
       const cubemapCanvas = document.createElement('canvas');
       const left = document.getElementById('texture-left');
       const top = document.getElementById('texture-top');
@@ -11531,7 +11549,7 @@ window.onload = function() {
       context.drawImage(right, this.resolution * 2, this.resolution);
       context.drawImage(back, this.resolution * 3, this.resolution);
     
-      return cubemapCanvas.toDataURL("image/png");      
+      return cubemapCanvas.toDataURL(type, params);      
     };
   };
 
@@ -11580,7 +11598,12 @@ window.onload = function() {
     .name("Resolution")
     .onChange(renderTextures);
   gui.add(menu, "animationSpeed", 0, 10).name("Animation speed");
-  gui.add(menu, "saveSkybox").name("Download skybox");
+  gui.add(menu, "saveSkybox").name("Download skybox png");
+  gui
+    .add(menu, "jpegQuality", 0.5, 1, 0.01)
+    .name("Jpeg Quality")
+    .onFinishChange(renderTextures);
+  gui.add(menu, "saveSkyboxJpg").name("Download skybox jpeg");
 
   document.body.appendChild(gui.domElement);
   gui.domElement.style.position = "fixed";
@@ -11621,6 +11644,7 @@ window.onload = function() {
       stars: menu.stars,
       sun: menu.sun,
       sunFalloff: menu.sunFalloff,
+      jpegQuality: menu.jpegQuality,
       nebulaColorBegin: menu.nebulaColorBegin,
       nebulaColorEnd: menu.nebulaColorEnd,
       nebulae: menu.nebulae,
@@ -11656,6 +11680,7 @@ window.onload = function() {
       stars: menu.stars,
       sun: menu.sun,
       sunFalloff: menu.sunFalloff,
+      jpegQuality: menu.jpegQuality,
       nebulaColorBegin: menu.nebulaColorBegin,
       nebulaColorEnd: menu.nebulaColorEnd,
       nebulae: menu.nebulae,
