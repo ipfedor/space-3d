@@ -159,7 +159,7 @@ window.onload = function() {
   }
 
   function setQueryString() {
-    location.hash = qs.stringify({
+    const queryString = qs.stringify({
       seed: menu.seed,
       fov: menu.fov,
       pointStars: menu.pointStars,
@@ -172,6 +172,11 @@ window.onload = function() {
       resolution: menu.resolution,
       animationSpeed: menu.animationSpeed
     });
+    try {
+      history.replaceState(null, "", "#" + queryString);
+    } catch (e) {
+      location.hash = queryString;
+    }
   }
 
   var hideControls = false;
