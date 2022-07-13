@@ -11,7 +11,14 @@ function buildAttribs(gl, layout) {
     return attribs;
 }
 
+function discardAttribs(attribs) {
+    for (var key in attribs) {
+        attribs[key].buffer.discard();
+    }
+}
+
 module.exports.buildAttribs = buildAttribs;
+module.exports.discardAttribs = discardAttribs;
 
 
 /*...........................................................................*/
@@ -41,11 +48,11 @@ function Framebuffer(gl, color, depth, ext) {
         if (color.length > 1) {
             var drawBuffers = [];
             for (var i = 0; i < color.length; i++) {
-                drawBuffers.push(ext["COLOR_ATTACHMENT" + i + "_WEBGL"]);
+                drawBuffers.push(gl["COLOR_ATTACHMENT" + i]||ext["COLOR_ATTACHMENT" + i + "_WEBGL"]);
             }
-            ext.drawBuffersWEBGL(drawBuffers);
+            (gl.drawBuffers||ext.drawBuffersWEBGL)(drawBuffers);
             for (var i = 0; i < color.length; i++) {
-                gl.framebufferTexture2D(gl.FRAMEBUFFER, ext["COLOR_ATTACHMENT" + i + "_WEBGL"],
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl["COLOR_ATTACHMENT" + i]||ext["COLOR_ATTACHMENT" + i + "_WEBGL"],
                     gl.TEXTURE_2D, color[i].texture, 0);
             }
         } else {
@@ -55,6 +62,10 @@ function Framebuffer(gl, color, depth, ext) {
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depth.texture, 0);
         }
     };
+
+    self.discard = function() {
+        gl.deleteFramebuffer(self.fb);
+    }
 
     self.bind = function() {
         gl.bindFramebuffer(gl.FRAMEBUFFER, self.fb);
@@ -86,7 +97,11 @@ function Texture(gl, index, data, width, height, options) {
         self.activate();
         self.texture = gl.createTexture();
         self.bind();
-        gl.texImage2D(options.target, 0, options.internalFormat, options.format, options.type, data);
+        if (data) {
+            gl.texImage2D(options.target, 0, options.internalFormat, options.format, options.type, data);
+        } else {
+            gl.texImage2D(options.target, 0, options.internalFormat, width, height, 0, options.format, options.type, data);
+        }
         gl.texParameteri(options.target, gl.TEXTURE_MAG_FILTER, options.mag);
         gl.texParameteri(options.target, gl.TEXTURE_MIN_FILTER, options.min);
         gl.texParameteri(options.target, gl.TEXTURE_WRAP_S, options.wraps);
@@ -94,6 +109,10 @@ function Texture(gl, index, data, width, height, options) {
         if (options.mag != gl.NEAREST || options.min != gl.NEAREST) {
             gl.generateMipmap(options.target);
         }
+    }
+
+    self.discard = function() {
+        gl.deleteTexture(self.texture);
     }
 
     self.bind = function() {
@@ -124,6 +143,10 @@ function GLBuffer(gl) {
 
     self.initialize = function() {
         self.buffer = gl.createBuffer();
+    }
+
+    self.discard = function() {
+        gl.deleteBuffer(self.buffer);
     }
 
     self.bind = function() {
@@ -225,16 +248,22 @@ function Program(gl, vertexSource, fragmentSource) {
         self.uniforms = self.gatherUniforms();
     }
 
+    self.discard = function() {
+        gl.deleteProgram(self.program);
+        gl.deleteShader(self.vertexShader);
+        gl.deleteShader(self.fragmentShader);
+    }
+
     self.use = function() {
         gl.useProgram(self.program);
     }
 
     self.compileProgram = function(vertexSource, fragmentSource) {
-        var vertexShader = self.compileShader(vertexSource, gl.VERTEX_SHADER);
-        var fragmentShader = self.compileShader(fragmentSource, gl.FRAGMENT_SHADER);
+        this.vertexShader = self.compileShader(vertexSource, gl.VERTEX_SHADER);
+        this.fragmentShader = self.compileShader(fragmentSource, gl.FRAGMENT_SHADER);
         var program = gl.createProgram();
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
+        gl.attachShader(program, this.vertexShader);
+        gl.attachShader(program, this.fragmentShader);
         gl.linkProgram(program);
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
             console.log(gl.getProgramInfoLog(program));

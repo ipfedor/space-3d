@@ -11453,6 +11453,528 @@ process.chdir = function (dir) {
 };
 
 },{}],28:[function(require,module,exports){
+module.exports = `
+//
+// GLSL textureless classic 4D noise "cnoise",
+// with an RSL-style periodic variant "pnoise".
+// Author:  Stefan Gustavson (stefan.gustavson@liu.se)
+// Version: 2011-08-22
+//
+// Many thanks to Ian McEwan of Ashima Arts for the
+// ideas for permutation and gradient selection.
+//
+// Copyright (c) 2011 Stefan Gustavson. All rights reserved.
+// Distributed under the MIT license. See LICENSE file.
+// https://github.com/ashima/webgl-noise
+//
+
+vec4 mod289(vec4 x)
+{
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+vec4 permute(vec4 x)
+{
+  return mod289(((x*34.0)+1.0)*x);
+}
+
+vec4 taylorInvSqrt(vec4 r)
+{
+  return 1.79284291400159 - 0.85373472095314 * r;
+}
+
+vec4 fade(vec4 t) {
+  return t*t*t*(t*(t*6.0-15.0)+10.0);
+}
+
+// Classic Perlin noise
+float cnoise(vec4 P)
+{
+  vec4 Pi0 = floor(P); // Integer part for indexing
+  vec4 Pi1 = Pi0 + 1.0; // Integer part + 1
+  Pi0 = mod289(Pi0);
+  Pi1 = mod289(Pi1);
+  vec4 Pf0 = fract(P); // Fractional part for interpolation
+  vec4 Pf1 = Pf0 - 1.0; // Fractional part - 1.0
+  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+  vec4 iy = vec4(Pi0.yy, Pi1.yy);
+  vec4 iz0 = vec4(Pi0.zzzz);
+  vec4 iz1 = vec4(Pi1.zzzz);
+  vec4 iw0 = vec4(Pi0.wwww);
+  vec4 iw1 = vec4(Pi1.wwww);
+
+  vec4 ixy = permute(permute(ix) + iy);
+  vec4 ixy0 = permute(ixy + iz0);
+  vec4 ixy1 = permute(ixy + iz1);
+  vec4 ixy00 = permute(ixy0 + iw0);
+  vec4 ixy01 = permute(ixy0 + iw1);
+  vec4 ixy10 = permute(ixy1 + iw0);
+  vec4 ixy11 = permute(ixy1 + iw1);
+
+  vec4 gx00 = ixy00 * (1.0 / 7.0);
+  vec4 gy00 = floor(gx00) * (1.0 / 7.0);
+  vec4 gz00 = floor(gy00) * (1.0 / 6.0);
+  gx00 = fract(gx00) - 0.5;
+  gy00 = fract(gy00) - 0.5;
+  gz00 = fract(gz00) - 0.5;
+  vec4 gw00 = vec4(0.75) - abs(gx00) - abs(gy00) - abs(gz00);
+  vec4 sw00 = step(gw00, vec4(0.0));
+  gx00 -= sw00 * (step(0.0, gx00) - 0.5);
+  gy00 -= sw00 * (step(0.0, gy00) - 0.5);
+
+  vec4 gx01 = ixy01 * (1.0 / 7.0);
+  vec4 gy01 = floor(gx01) * (1.0 / 7.0);
+  vec4 gz01 = floor(gy01) * (1.0 / 6.0);
+  gx01 = fract(gx01) - 0.5;
+  gy01 = fract(gy01) - 0.5;
+  gz01 = fract(gz01) - 0.5;
+  vec4 gw01 = vec4(0.75) - abs(gx01) - abs(gy01) - abs(gz01);
+  vec4 sw01 = step(gw01, vec4(0.0));
+  gx01 -= sw01 * (step(0.0, gx01) - 0.5);
+  gy01 -= sw01 * (step(0.0, gy01) - 0.5);
+
+  vec4 gx10 = ixy10 * (1.0 / 7.0);
+  vec4 gy10 = floor(gx10) * (1.0 / 7.0);
+  vec4 gz10 = floor(gy10) * (1.0 / 6.0);
+  gx10 = fract(gx10) - 0.5;
+  gy10 = fract(gy10) - 0.5;
+  gz10 = fract(gz10) - 0.5;
+  vec4 gw10 = vec4(0.75) - abs(gx10) - abs(gy10) - abs(gz10);
+  vec4 sw10 = step(gw10, vec4(0.0));
+  gx10 -= sw10 * (step(0.0, gx10) - 0.5);
+  gy10 -= sw10 * (step(0.0, gy10) - 0.5);
+
+  vec4 gx11 = ixy11 * (1.0 / 7.0);
+  vec4 gy11 = floor(gx11) * (1.0 / 7.0);
+  vec4 gz11 = floor(gy11) * (1.0 / 6.0);
+  gx11 = fract(gx11) - 0.5;
+  gy11 = fract(gy11) - 0.5;
+  gz11 = fract(gz11) - 0.5;
+  vec4 gw11 = vec4(0.75) - abs(gx11) - abs(gy11) - abs(gz11);
+  vec4 sw11 = step(gw11, vec4(0.0));
+  gx11 -= sw11 * (step(0.0, gx11) - 0.5);
+  gy11 -= sw11 * (step(0.0, gy11) - 0.5);
+
+  vec4 g0000 = vec4(gx00.x,gy00.x,gz00.x,gw00.x);
+  vec4 g1000 = vec4(gx00.y,gy00.y,gz00.y,gw00.y);
+  vec4 g0100 = vec4(gx00.z,gy00.z,gz00.z,gw00.z);
+  vec4 g1100 = vec4(gx00.w,gy00.w,gz00.w,gw00.w);
+  vec4 g0010 = vec4(gx10.x,gy10.x,gz10.x,gw10.x);
+  vec4 g1010 = vec4(gx10.y,gy10.y,gz10.y,gw10.y);
+  vec4 g0110 = vec4(gx10.z,gy10.z,gz10.z,gw10.z);
+  vec4 g1110 = vec4(gx10.w,gy10.w,gz10.w,gw10.w);
+  vec4 g0001 = vec4(gx01.x,gy01.x,gz01.x,gw01.x);
+  vec4 g1001 = vec4(gx01.y,gy01.y,gz01.y,gw01.y);
+  vec4 g0101 = vec4(gx01.z,gy01.z,gz01.z,gw01.z);
+  vec4 g1101 = vec4(gx01.w,gy01.w,gz01.w,gw01.w);
+  vec4 g0011 = vec4(gx11.x,gy11.x,gz11.x,gw11.x);
+  vec4 g1011 = vec4(gx11.y,gy11.y,gz11.y,gw11.y);
+  vec4 g0111 = vec4(gx11.z,gy11.z,gz11.z,gw11.z);
+  vec4 g1111 = vec4(gx11.w,gy11.w,gz11.w,gw11.w);
+
+  vec4 norm00 = taylorInvSqrt(vec4(dot(g0000, g0000), dot(g0100, g0100), dot(g1000, g1000), dot(g1100, g1100)));
+  g0000 *= norm00.x;
+  g0100 *= norm00.y;
+  g1000 *= norm00.z;
+  g1100 *= norm00.w;
+
+  vec4 norm01 = taylorInvSqrt(vec4(dot(g0001, g0001), dot(g0101, g0101), dot(g1001, g1001), dot(g1101, g1101)));
+  g0001 *= norm01.x;
+  g0101 *= norm01.y;
+  g1001 *= norm01.z;
+  g1101 *= norm01.w;
+
+  vec4 norm10 = taylorInvSqrt(vec4(dot(g0010, g0010), dot(g0110, g0110), dot(g1010, g1010), dot(g1110, g1110)));
+  g0010 *= norm10.x;
+  g0110 *= norm10.y;
+  g1010 *= norm10.z;
+  g1110 *= norm10.w;
+
+  vec4 norm11 = taylorInvSqrt(vec4(dot(g0011, g0011), dot(g0111, g0111), dot(g1011, g1011), dot(g1111, g1111)));
+  g0011 *= norm11.x;
+  g0111 *= norm11.y;
+  g1011 *= norm11.z;
+  g1111 *= norm11.w;
+
+  float n0000 = dot(g0000, Pf0);
+  float n1000 = dot(g1000, vec4(Pf1.x, Pf0.yzw));
+  float n0100 = dot(g0100, vec4(Pf0.x, Pf1.y, Pf0.zw));
+  float n1100 = dot(g1100, vec4(Pf1.xy, Pf0.zw));
+  float n0010 = dot(g0010, vec4(Pf0.xy, Pf1.z, Pf0.w));
+  float n1010 = dot(g1010, vec4(Pf1.x, Pf0.y, Pf1.z, Pf0.w));
+  float n0110 = dot(g0110, vec4(Pf0.x, Pf1.yz, Pf0.w));
+  float n1110 = dot(g1110, vec4(Pf1.xyz, Pf0.w));
+  float n0001 = dot(g0001, vec4(Pf0.xyz, Pf1.w));
+  float n1001 = dot(g1001, vec4(Pf1.x, Pf0.yz, Pf1.w));
+  float n0101 = dot(g0101, vec4(Pf0.x, Pf1.y, Pf0.z, Pf1.w));
+  float n1101 = dot(g1101, vec4(Pf1.xy, Pf0.z, Pf1.w));
+  float n0011 = dot(g0011, vec4(Pf0.xy, Pf1.zw));
+  float n1011 = dot(g1011, vec4(Pf1.x, Pf0.y, Pf1.zw));
+  float n0111 = dot(g0111, vec4(Pf0.x, Pf1.yzw));
+  float n1111 = dot(g1111, Pf1);
+
+  vec4 fade_xyzw = fade(Pf0);
+  vec4 n_0w = mix(vec4(n0000, n1000, n0100, n1100), vec4(n0001, n1001, n0101, n1101), fade_xyzw.w);
+  vec4 n_1w = mix(vec4(n0010, n1010, n0110, n1110), vec4(n0011, n1011, n0111, n1111), fade_xyzw.w);
+  vec4 n_zw = mix(n_0w, n_1w, fade_xyzw.z);
+  vec2 n_yzw = mix(n_zw.xy, n_zw.zw, fade_xyzw.y);
+  float n_xyzw = mix(n_yzw.x, n_yzw.y, fade_xyzw.x);
+  return 2.2 * n_xyzw;
+}
+
+// Classic Perlin noise, periodic version
+float pnoise(vec4 P, vec4 rep)
+{
+  vec4 Pi0 = mod(floor(P), rep); // Integer part modulo rep
+  vec4 Pi1 = mod(Pi0 + 1.0, rep); // Integer part + 1 mod rep
+  Pi0 = mod289(Pi0);
+  Pi1 = mod289(Pi1);
+  vec4 Pf0 = fract(P); // Fractional part for interpolation
+  vec4 Pf1 = Pf0 - 1.0; // Fractional part - 1.0
+  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+  vec4 iy = vec4(Pi0.yy, Pi1.yy);
+  vec4 iz0 = vec4(Pi0.zzzz);
+  vec4 iz1 = vec4(Pi1.zzzz);
+  vec4 iw0 = vec4(Pi0.wwww);
+  vec4 iw1 = vec4(Pi1.wwww);
+
+  vec4 ixy = permute(permute(ix) + iy);
+  vec4 ixy0 = permute(ixy + iz0);
+  vec4 ixy1 = permute(ixy + iz1);
+  vec4 ixy00 = permute(ixy0 + iw0);
+  vec4 ixy01 = permute(ixy0 + iw1);
+  vec4 ixy10 = permute(ixy1 + iw0);
+  vec4 ixy11 = permute(ixy1 + iw1);
+
+  vec4 gx00 = ixy00 * (1.0 / 7.0);
+  vec4 gy00 = floor(gx00) * (1.0 / 7.0);
+  vec4 gz00 = floor(gy00) * (1.0 / 6.0);
+  gx00 = fract(gx00) - 0.5;
+  gy00 = fract(gy00) - 0.5;
+  gz00 = fract(gz00) - 0.5;
+  vec4 gw00 = vec4(0.75) - abs(gx00) - abs(gy00) - abs(gz00);
+  vec4 sw00 = step(gw00, vec4(0.0));
+  gx00 -= sw00 * (step(0.0, gx00) - 0.5);
+  gy00 -= sw00 * (step(0.0, gy00) - 0.5);
+
+  vec4 gx01 = ixy01 * (1.0 / 7.0);
+  vec4 gy01 = floor(gx01) * (1.0 / 7.0);
+  vec4 gz01 = floor(gy01) * (1.0 / 6.0);
+  gx01 = fract(gx01) - 0.5;
+  gy01 = fract(gy01) - 0.5;
+  gz01 = fract(gz01) - 0.5;
+  vec4 gw01 = vec4(0.75) - abs(gx01) - abs(gy01) - abs(gz01);
+  vec4 sw01 = step(gw01, vec4(0.0));
+  gx01 -= sw01 * (step(0.0, gx01) - 0.5);
+  gy01 -= sw01 * (step(0.0, gy01) - 0.5);
+
+  vec4 gx10 = ixy10 * (1.0 / 7.0);
+  vec4 gy10 = floor(gx10) * (1.0 / 7.0);
+  vec4 gz10 = floor(gy10) * (1.0 / 6.0);
+  gx10 = fract(gx10) - 0.5;
+  gy10 = fract(gy10) - 0.5;
+  gz10 = fract(gz10) - 0.5;
+  vec4 gw10 = vec4(0.75) - abs(gx10) - abs(gy10) - abs(gz10);
+  vec4 sw10 = step(gw10, vec4(0.0));
+  gx10 -= sw10 * (step(0.0, gx10) - 0.5);
+  gy10 -= sw10 * (step(0.0, gy10) - 0.5);
+
+  vec4 gx11 = ixy11 * (1.0 / 7.0);
+  vec4 gy11 = floor(gx11) * (1.0 / 7.0);
+  vec4 gz11 = floor(gy11) * (1.0 / 6.0);
+  gx11 = fract(gx11) - 0.5;
+  gy11 = fract(gy11) - 0.5;
+  gz11 = fract(gz11) - 0.5;
+  vec4 gw11 = vec4(0.75) - abs(gx11) - abs(gy11) - abs(gz11);
+  vec4 sw11 = step(gw11, vec4(0.0));
+  gx11 -= sw11 * (step(0.0, gx11) - 0.5);
+  gy11 -= sw11 * (step(0.0, gy11) - 0.5);
+
+  vec4 g0000 = vec4(gx00.x,gy00.x,gz00.x,gw00.x);
+  vec4 g1000 = vec4(gx00.y,gy00.y,gz00.y,gw00.y);
+  vec4 g0100 = vec4(gx00.z,gy00.z,gz00.z,gw00.z);
+  vec4 g1100 = vec4(gx00.w,gy00.w,gz00.w,gw00.w);
+  vec4 g0010 = vec4(gx10.x,gy10.x,gz10.x,gw10.x);
+  vec4 g1010 = vec4(gx10.y,gy10.y,gz10.y,gw10.y);
+  vec4 g0110 = vec4(gx10.z,gy10.z,gz10.z,gw10.z);
+  vec4 g1110 = vec4(gx10.w,gy10.w,gz10.w,gw10.w);
+  vec4 g0001 = vec4(gx01.x,gy01.x,gz01.x,gw01.x);
+  vec4 g1001 = vec4(gx01.y,gy01.y,gz01.y,gw01.y);
+  vec4 g0101 = vec4(gx01.z,gy01.z,gz01.z,gw01.z);
+  vec4 g1101 = vec4(gx01.w,gy01.w,gz01.w,gw01.w);
+  vec4 g0011 = vec4(gx11.x,gy11.x,gz11.x,gw11.x);
+  vec4 g1011 = vec4(gx11.y,gy11.y,gz11.y,gw11.y);
+  vec4 g0111 = vec4(gx11.z,gy11.z,gz11.z,gw11.z);
+  vec4 g1111 = vec4(gx11.w,gy11.w,gz11.w,gw11.w);
+
+  vec4 norm00 = taylorInvSqrt(vec4(dot(g0000, g0000), dot(g0100, g0100), dot(g1000, g1000), dot(g1100, g1100)));
+  g0000 *= norm00.x;
+  g0100 *= norm00.y;
+  g1000 *= norm00.z;
+  g1100 *= norm00.w;
+
+  vec4 norm01 = taylorInvSqrt(vec4(dot(g0001, g0001), dot(g0101, g0101), dot(g1001, g1001), dot(g1101, g1101)));
+  g0001 *= norm01.x;
+  g0101 *= norm01.y;
+  g1001 *= norm01.z;
+  g1101 *= norm01.w;
+
+  vec4 norm10 = taylorInvSqrt(vec4(dot(g0010, g0010), dot(g0110, g0110), dot(g1010, g1010), dot(g1110, g1110)));
+  g0010 *= norm10.x;
+  g0110 *= norm10.y;
+  g1010 *= norm10.z;
+  g1110 *= norm10.w;
+
+  vec4 norm11 = taylorInvSqrt(vec4(dot(g0011, g0011), dot(g0111, g0111), dot(g1011, g1011), dot(g1111, g1111)));
+  g0011 *= norm11.x;
+  g0111 *= norm11.y;
+  g1011 *= norm11.z;
+  g1111 *= norm11.w;
+
+  float n0000 = dot(g0000, Pf0);
+  float n1000 = dot(g1000, vec4(Pf1.x, Pf0.yzw));
+  float n0100 = dot(g0100, vec4(Pf0.x, Pf1.y, Pf0.zw));
+  float n1100 = dot(g1100, vec4(Pf1.xy, Pf0.zw));
+  float n0010 = dot(g0010, vec4(Pf0.xy, Pf1.z, Pf0.w));
+  float n1010 = dot(g1010, vec4(Pf1.x, Pf0.y, Pf1.z, Pf0.w));
+  float n0110 = dot(g0110, vec4(Pf0.x, Pf1.yz, Pf0.w));
+  float n1110 = dot(g1110, vec4(Pf1.xyz, Pf0.w));
+  float n0001 = dot(g0001, vec4(Pf0.xyz, Pf1.w));
+  float n1001 = dot(g1001, vec4(Pf1.x, Pf0.yz, Pf1.w));
+  float n0101 = dot(g0101, vec4(Pf0.x, Pf1.y, Pf0.z, Pf1.w));
+  float n1101 = dot(g1101, vec4(Pf1.xy, Pf0.z, Pf1.w));
+  float n0011 = dot(g0011, vec4(Pf0.xy, Pf1.zw));
+  float n1011 = dot(g1011, vec4(Pf1.x, Pf0.y, Pf1.zw));
+  float n0111 = dot(g0111, vec4(Pf0.x, Pf1.yzw));
+  float n1111 = dot(g1111, Pf1);
+
+  vec4 fade_xyzw = fade(Pf0);
+  vec4 n_0w = mix(vec4(n0000, n1000, n0100, n1100), vec4(n0001, n1001, n0101, n1101), fade_xyzw.w);
+  vec4 n_1w = mix(vec4(n0010, n1010, n0110, n1110), vec4(n0011, n1011, n0111, n1111), fade_xyzw.w);
+  vec4 n_zw = mix(n_0w, n_1w, fade_xyzw.z);
+  vec2 n_yzw = mix(n_zw.xy, n_zw.zw, fade_xyzw.y);
+  float n_xyzw = mix(n_yzw.x, n_yzw.y, fade_xyzw.x);
+  return 2.2 * n_xyzw;
+}
+`
+
+},{}],29:[function(require,module,exports){
+module.exports = `
+#version 100
+precision highp float;
+
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+attribute vec3 aPosition;
+varying vec3 pos;
+
+void main() {
+    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);
+    pos = (uModel * vec4(aPosition, 1)).xyz;
+}
+
+
+__split__
+
+
+#version 100
+precision highp float;
+
+uniform vec3 uColor;
+uniform vec3 uOffset;
+uniform float uScale;
+uniform float uIntensity;
+uniform float uFalloff;
+
+varying vec3 pos;
+
+__noise4d__
+
+float noise(vec3 p) {
+    return 0.5 * cnoise(vec4(p, 0)) + 0.5;
+}
+
+float nebula(vec3 p) {
+    const int steps = 6;
+    float scale = pow(2.0, float(steps));
+    vec3 displace;
+    for (int i = 0; i < steps; i++) {
+        displace = vec3(
+            noise(p.xyz * scale + displace),
+            noise(p.yzx * scale + displace),
+            noise(p.zxy * scale + displace)
+        );
+        scale *= 0.5;
+    }
+    return noise(p * scale + displace);
+}
+
+void main() {
+    vec3 posn = normalize(pos) * uScale;
+    float c = min(1.0, nebula(posn + uOffset) * uIntensity);
+    c = pow(c, uFalloff);
+    gl_FragColor = vec4(uColor, c);
+
+}
+`
+
+},{}],30:[function(require,module,exports){
+module.exports = `
+#version 100
+precision highp float;
+
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+attribute vec3 aPosition;
+attribute vec3 aColor;
+
+varying vec3 color;
+
+void main() {
+    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);
+    color = aColor;
+}
+
+
+__split__
+
+
+#version 100
+precision highp float;
+
+
+varying vec3 color;
+
+void main() {
+    gl_FragColor = vec4(color, 1.0);
+
+}
+`
+
+},{}],31:[function(require,module,exports){
+module.exports = `
+#version 100
+precision highp float;
+
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+attribute vec3 aPosition;
+attribute vec2 aUV;
+
+varying vec2 uv;
+
+void main() {
+    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);
+    uv = aUV;
+}
+
+
+__split__
+
+
+#version 100
+precision highp float;
+
+uniform sampler2D uTexture;
+
+varying vec2 uv;
+
+void main() {
+    gl_FragColor = texture2D(uTexture, uv);
+
+}
+`
+
+},{}],32:[function(require,module,exports){
+module.exports = `
+#version 100
+precision highp float;
+
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+attribute vec3 aPosition;
+varying vec3 pos;
+
+void main() {
+    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);
+    pos = (uModel * vec4(aPosition, 1)).xyz;
+}
+
+
+__split__
+
+
+#version 100
+precision highp float;
+
+uniform vec3 uPosition;
+uniform vec3 uColor;
+uniform float uSize;
+uniform float uFalloff;
+
+varying vec3 pos;
+
+void main() {
+    vec3 posn = normalize(pos);
+    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);
+    float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);
+    c += pow(pow(d, uFalloff) * 0.5, 4.0);
+    vec3 color = mix(uColor, vec3(1,1,1), c);
+    gl_FragColor = vec4(color, c);
+}
+`
+
+},{}],33:[function(require,module,exports){
+module.exports = `
+#version 100
+precision highp float;
+
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+attribute vec3 aPosition;
+varying vec3 pos;
+
+void main() {
+    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);
+    pos = (uModel * vec4(aPosition, 1)).xyz;
+}
+
+
+__split__
+
+
+#version 100
+precision highp float;
+
+uniform vec3 uPosition;
+uniform vec3 uColor;
+uniform float uSize;
+uniform float uFalloff;
+
+varying vec3 pos;
+
+void main() {
+    vec3 posn = normalize(pos);
+    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);
+    float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);
+    c += pow(d, uFalloff) * 0.5;
+    vec3 color = mix(uColor, vec3(1,1,1), c);
+    gl_FragColor = vec4(color, c);
+
+}
+`
+
+},{}],34:[function(require,module,exports){
 // jshint -W097
 // jshint undef: true, unused: true
 /* globals require,window,document,requestAnimationFrame,dat,location*/
@@ -11471,13 +11993,27 @@ var resolution = 1024;
 window.onload = function() {
   var params = qs.parse(location.hash);
 
+  var renderCanvas = document.getElementById("render-canvas");
+  renderCanvas.width = renderCanvas.clientWidth;
+  renderCanvas.height = renderCanvas.clientHeight;
+
+  var skybox = new Skybox(renderCanvas);
+  var space = new Space3D(resolution);
+
   var ControlsMenu = function() {
     this.seed = params.seed || generateRandomSeed();
     this.randomSeed = function() {
       this.seed = generateRandomSeed();
       renderTextures();
     };
+    this.randomColor = function() {
+      this.backgroundColor = [Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32];
+      this.nebulaColorBegin = [Math.random()*255,Math.random()*255,Math.random()*255];
+      this.nebulaColorEnd = [Math.random()*255,Math.random()*255,Math.random()*255];
+      renderTextures();
+    };
     this.fov = parseInt(params.fov) || 80;
+    this.backgroundColor = params.backgroundColor === undefined ? space.rgbToHex(Math.random()*10,Math.random()*10,Math.random()*10) : params.backgroundColor;
     this.pointStars =
       params.pointStars === undefined ? true : params.pointStars === "true";
     this.stars = params.stars === undefined ? true : params.stars === "true";
@@ -11486,8 +12022,8 @@ window.onload = function() {
     this.jpegQuality = params.jpegQuality === undefined ? 0.85 : parseFloat(params.jpegQuality);
     this.nebulae = params.nebulae === undefined ? true : params.nebulae === "true";
     this.nebulaOpacity = params.nebulaOpacity === undefined ? 33 : parseInt(params.nebulaOpacity);
-    this.nebulaColorBegin = params.nebulaColorBegin === undefined ? '#ff0000' : params.nebulaColorBegin;
-    this.nebulaColorEnd = params.nebulaColorEnd === undefined ? '#800000' : params.nebulaColorEnd;
+    this.nebulaColorBegin = params.nebulaColorBegin === undefined ? space.rgbToHex(Math.random()*255, Math.random()*255, Math.random()*255) : params.nebulaColorBegin;
+    this.nebulaColorEnd = params.nebulaColorEnd === undefined ? space.rgbToHex(Math.random()*255, Math.random()*255, Math.random()*255) : params.nebulaColorEnd;
     this.noiseScale = params.nebulaOpacity === undefined ? 5 : parseFloat(params.noiseScale);
     this.nebulaBrightness = params.nebulaBrightness === undefined ? 18 : parseInt(params.nebulaBrightness);
     this.resolution = parseInt(params.resolution) || 1024;
@@ -11564,7 +12100,13 @@ window.onload = function() {
     .listen()
     .onFinishChange(renderTextures);
   gui.add(menu, "randomSeed").name("Randomize seed");
+  gui.add(menu, "randomColor").name("Randomize colors");
   gui.add(menu, "fov", 10, 150, 1).name("Field of view °");
+  gui
+    .addColor(menu, 'backgroundColor')
+    .listen()
+    .name("Background color")
+    .onChange(renderTextures);
   gui
     .add(menu, "pointStars")
     .name("Point stars")
@@ -11587,10 +12129,12 @@ window.onload = function() {
     .onChange(renderTextures);
   gui
     .addColor(menu, 'nebulaColorBegin')
+    .listen()         
     .name("Nebula Color Begin")
     .onChange(renderTextures);
   gui
     .addColor(menu, 'nebulaColorEnd')
+    .listen()         
     .name("Nebula Color End")
     .onChange(renderTextures);
   gui
@@ -11640,6 +12184,7 @@ window.onload = function() {
     const queryString = qs.stringify({
       seed: menu.seed,
       fov: menu.fov,
+      backgroundColor: menu.backgroundColor,                                      
       pointStars: menu.pointStars,
       stars: menu.stars,
       sun: menu.sun,
@@ -11666,16 +12211,10 @@ window.onload = function() {
     }
   };
 
-  var renderCanvas = document.getElementById("render-canvas");
-  renderCanvas.width = renderCanvas.clientWidth;
-  renderCanvas.height = renderCanvas.clientHeight;
-
-  var skybox = new Skybox(renderCanvas);
-  var space = new Space3D(resolution);
-
   function renderTextures() {
     var textures = space.render({
       seed: menu.seed,
+      backgroundColor: menu.backgroundColor,                                      
       pointStars: menu.pointStars,
       stars: menu.stars,
       sun: menu.sun,
@@ -11752,13 +12291,12 @@ function generateRandomSeed() {
   return (Math.random() * 1000000000000000000).toString(36);
 }
 ``
-},{"./skybox.js":29,"./space-3d.js":30,"filesaver.js":4,"gl-matrix":7,"jszip":18,"query-string":19}],29:[function(require,module,exports){
+},{"./skybox.js":35,"./space-3d.js":36,"filesaver.js":4,"gl-matrix":7,"jszip":18,"query-string":19}],35:[function(require,module,exports){
 // jshint -W097
 // jshint undef: true, unused: true
 /* globals require,__dirname,Float32Array,module*/
 
 "use strict";
-
 
 var glm = require("gl-matrix");
 var webgl = require("./webgl.js");
@@ -11771,7 +12309,7 @@ module.exports = function(renderCanvas) {
     self.initialize = function() {
         self.gl = renderCanvas.getContext("webgl");
         self.gl.pixelStorei(self.gl.UNPACK_FLIP_Y_WEBGL, true);
-        self.pSkybox = util.loadProgram(self.gl, "#version 100\r\nprecision highp float;\r\n\r\nuniform mat4 uModel;\r\nuniform mat4 uView;\r\nuniform mat4 uProjection;\r\n\r\nattribute vec3 aPosition;\r\nattribute vec2 aUV;\r\n\r\nvarying vec2 uv;\r\n\r\nvoid main() {\r\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\r\n    uv = aUV;\r\n}\r\n\r\n\r\n__split__\r\n\r\n\r\n#version 100\r\nprecision highp float;\r\n\r\nuniform sampler2D uTexture;\r\n\r\nvarying vec2 uv;\r\n\r\nvoid main() {\r\n    gl_FragColor = texture2D(uTexture, uv);\r\n\r\n}\r\n");
+        self.pSkybox = util.loadProgram(self.gl, require("./glsl/skybox.js"));
         self.rSkybox = buildQuad(self.gl, self.pSkybox);
         self.textures = {};
     };
@@ -11857,13 +12395,12 @@ function buildQuad(gl, program) {
     return renderable;
 }
 
-},{"./util.js":31,"./webgl.js":32,"gl-matrix":7}],30:[function(require,module,exports){
+},{"./glsl/skybox.js":31,"./util.js":37,"./webgl.js":38,"gl-matrix":7}],36:[function(require,module,exports){
 // jshint -W097
 // jshint undef: true, unused: true
 /* globals require,document,__dirname,Float32Array,module*/
 
 "use strict";
-
 
 var glm = require("gl-matrix");
 var webgl = require("./webgl.js");
@@ -11872,15 +12409,30 @@ var rng = require("rng");
 
 var NSTARS = 100000;
 
-module.exports = function() {
+module.exports = function(canvasOrContext = undefined) {
   var self = this;
 
-  self.initialize = function() {
-    // Initialize the offscreen rendering canvas.
-    self.canvas = document.createElement("canvas");
+  self.initialize = function(canvasOrContext = undefined) {
+    if (canvasOrContext instanceof HTMLCanvasElement) {
+      self.canvas = canvasOrContext;
+
+    } else if (canvasOrContext instanceof WebGLRenderingContext || canvasOrContext instanceof WebGL2RenderingContext) {
+      self.canvas = canvasOrContext.canvas;
+      self.gl = canvasOrContext;
+
+    } else {
+      canvasOrContext = undefined;
+    }
+
+    if (!self.canvas) {
+      self.canvas = document.createElement("canvas");
+    }
+
+    if (!self.gl) {
+      self.gl = self.canvas.getContext("webgl");
+    }
 
     // Initialize the gl context.
-    self.gl = self.canvas.getContext("webgl");
     self.gl.enable(self.gl.BLEND);
     self.gl.blendFuncSeparate(
       self.gl.SRC_ALPHA,
@@ -11890,22 +12442,10 @@ module.exports = function() {
     );
 
     // Load the programs.
-    self.pNebula = util.loadProgram(
-      self.gl,
-      "#version 100\r\nprecision highp float;\r\n\r\nuniform mat4 uModel;\r\nuniform mat4 uView;\r\nuniform mat4 uProjection;\r\n\r\nattribute vec3 aPosition;\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\r\n    pos = (uModel * vec4(aPosition, 1)).xyz;\r\n}\r\n\r\n\r\n__split__\r\n\r\n\r\n#version 100\r\nprecision highp float;\r\n\r\nuniform vec3 uColor;\r\nuniform vec3 uOffset;\r\nuniform float uScale;\r\nuniform float uIntensity;\r\nuniform float uFalloff;\r\n\r\nvarying vec3 pos;\r\n\r\n__noise4d__\r\n\r\nfloat noise(vec3 p) {\r\n    return 0.5 * cnoise(vec4(p, 0)) + 0.5;\r\n}\r\n\r\nfloat nebula(vec3 p) {\r\n    const int steps = 6;\r\n    float scale = pow(2.0, float(steps));\r\n    vec3 displace;\r\n    for (int i = 0; i < steps; i++) {\r\n        displace = vec3(\r\n            noise(p.xyz * scale + displace),\r\n            noise(p.yzx * scale + displace),\r\n            noise(p.zxy * scale + displace)\r\n        );\r\n        scale *= 0.5;\r\n    }\r\n    return noise(p * scale + displace);\r\n}\r\n\r\nvoid main() {\r\n    vec3 posn = normalize(pos) * uScale;\r\n    float c = min(1.0, nebula(posn + uOffset) * uIntensity);\r\n    c = pow(c, uFalloff);\r\n    gl_FragColor = vec4(uColor, c);\r\n\r\n}\r\n"
-    );
-    self.pPointStars = util.loadProgram(
-      self.gl,
-      "#version 100\r\nprecision highp float;\r\n\r\nuniform mat4 uModel;\r\nuniform mat4 uView;\r\nuniform mat4 uProjection;\r\n\r\nattribute vec3 aPosition;\r\nattribute vec3 aColor;\r\n\r\nvarying vec3 color;\r\n\r\nvoid main() {\r\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\r\n    color = aColor;\r\n}\r\n\r\n\r\n__split__\r\n\r\n\r\n#version 100\r\nprecision highp float;\r\n\r\n\r\nvarying vec3 color;\r\n\r\nvoid main() {\r\n    gl_FragColor = vec4(color, 1.0);\r\n\r\n}\r\n"
-    );
-    self.pStar = util.loadProgram(
-      self.gl,
-      "#version 100\r\nprecision highp float;\r\n\r\nuniform mat4 uModel;\r\nuniform mat4 uView;\r\nuniform mat4 uProjection;\r\n\r\nattribute vec3 aPosition;\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\r\n    pos = (uModel * vec4(aPosition, 1)).xyz;\r\n}\r\n\r\n\r\n__split__\r\n\r\n\r\n#version 100\r\nprecision highp float;\r\n\r\nuniform vec3 uPosition;\r\nuniform vec3 uColor;\r\nuniform float uSize;\r\nuniform float uFalloff;\r\n\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    vec3 posn = normalize(pos);\r\n    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);\r\n    float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);\r\n    c += pow(d, uFalloff) * 0.5;\r\n    vec3 color = mix(uColor, vec3(1,1,1), c);\r\n    gl_FragColor = vec4(color, c);\r\n\r\n}\r\n"
-    );
-    self.pSun = util.loadProgram(
-      self.gl,
-      "#version 100\r\nprecision highp float;\r\n\r\nuniform mat4 uModel;\r\nuniform mat4 uView;\r\nuniform mat4 uProjection;\r\n\r\nattribute vec3 aPosition;\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\r\n    pos = (uModel * vec4(aPosition, 1)).xyz;\r\n}\r\n\r\n\r\n__split__\r\n\r\n\r\n#version 100\r\nprecision highp float;\r\n\r\nuniform vec3 uPosition;\r\nuniform vec3 uColor;\r\nuniform float uSize;\r\nuniform float uFalloff;\r\n\r\nvarying vec3 pos;\r\n\r\nvoid main() {\r\n    vec3 posn = normalize(pos);\r\n    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);\r\n    float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);\r\n    c += pow(d, uFalloff) * 0.5;\r\n    vec3 color = mix(uColor, vec3(1,1,1), c);\r\n    gl_FragColor = vec4(color, c);\r\n\r\n}\r\n"
-    );
+    self.pNebula = util.loadProgram(self.gl, require("./glsl/nebula.js"));
+    self.pPointStars = util.loadProgram(self.gl, require("./glsl/point-stars.js"));
+    self.pStar = util.loadProgram(self.gl, require("./glsl/star.js"));
+    self.pSun = util.loadProgram(self.gl, require("./glsl/sun.js"));
 
     // Create the point stars renderable.
     var rand = new rng.MT(hashcode("best seed ever") + 5000);
@@ -11918,30 +12458,40 @@ module.exports = function() {
       position.set(star.position, i * 18);
       color.set(star.color, i * 18);
     }
-    var attribs = webgl.buildAttribs(self.gl, { aPosition: 3, aColor: 3 });
-    attribs.aPosition.buffer.set(position);
-    attribs.aColor.buffer.set(color);
+    self.attribs = webgl.buildAttribs(self.gl, { aPosition: 3, aColor: 3 });
+    self.attribs.aPosition.buffer.set(position);
+    self.attribs.aColor.buffer.set(color);
     var count = position.length / 9;
     self.rPointStars = new webgl.Renderable(
       self.gl,
       self.pPointStars,
-      attribs,
+      self.attribs,
       count
     );
 
     // Create the nebula, sun, and star renderables.
-    self.rNebula = buildBox(self.gl, self.pNebula);
-    self.rSun = buildBox(self.gl, self.pSun);
-    self.rStar = buildBox(self.gl, self.pStar);
+    self.rNebula = buildBox(self.gl, 1.0, self.pNebula);
+    self.rSun = buildBox(self.gl, 0.45, self.pSun);
+    self.rStar = buildBox(self.gl, 0.005, self.pStar);
   };
+
+  self.discard = function() {
+    webgl.discardAttribs(self.attribs);
+    self.pPointStars.discard();
+    self.pNebula.discard();
+    self.pStar.discard();
+    self.pSun.discard();
+  }
 
   self.render = function(params) {
     // We'll be returning a map of direction to texture.
     var textures = {};
 
-    // Handle changes to resolution.
-    self.canvas.width = self.canvas.height = params.resolution;
-    self.gl.viewport(0, 0, params.resolution, params.resolution);
+    if (!params.renderToTexture) {
+      // Handle changes to resolution.
+      self.canvas.width = self.canvas.height = params.resolution;
+      self.gl.viewport(0, 0, params.resolution, params.resolution);
+    }
 
     // Initialize the point star parameters.
     var rand = new rng.MT(hashcode(params.seed) + 1000);
@@ -11963,8 +12513,8 @@ module.exports = function() {
       starParams.push({
         pos: randomVec3(rand),
         color: cl,
-        size: rand.random() * 0.00000005 + 0.00000005,
-        falloff: rand.random() * 200000 + 10000
+        size: rand.random() * 0.00000002 + 0.000000005,
+        falloff: rand.random() * Math.pow(2,20) + Math.pow(2,16)
       });
       if (rand.random() < 0.01) {
         break;
@@ -11975,8 +12525,8 @@ module.exports = function() {
     //var rand = new rng.MT(hashcode(params.seed) + Math.floor(new Date().getTime() % 9999));
     var rand = new rng.MT(hashcode(params.seed) + 2000);
     var nebulaParams = [];
-    var beginColor = hexToRgb(params.nebulaColorBegin);
-    var endColor = hexToRgb(params.nebulaColorEnd);
+    var beginColor = self.hexToRgb(params.nebulaColorBegin);
+    var endColor = self.hexToRgb(params.nebulaColorEnd);
     var countNebulas = Math.floor(2 + rand.random() * 3); // 2 - 4 nebulas
     if (params.nebulae) {
         for(var ni=0; ni<countNebulas; ni++) {
@@ -12045,11 +12595,46 @@ module.exports = function() {
     var projection = glm.mat4.create();
     glm.mat4.perspective(projection, Math.PI / 2, 1.0, 0.1, 256);
 
+    var ext = self.gl instanceof WebGL2RenderingContext?{}:webgl.getExtensions(self.gl, ['WEBGL_draw_buffers']);
+
     // Iterate over the directions to render and create the textures.
     var keys = Object.keys(dirs);
     for (var i = 0; i < keys.length; i++) {
+      var framebuffer = undefined;
+      var framebufferIsTemp = false;
+
+      if (params.renderToTexture) {
+        var texture;
+        if (Array.isArray(params.renderToTexture)) {
+          if (params.renderToTexture[i] instanceof WebGLTexture) {
+            texture = params.renderToTexture[i];
+            textures[keys[i]] = texture;
+          } else if (params.renderToTexture[i] instanceof WebGLFramebuffer) {
+            framebuffer = params.renderToTexture[i];
+            textures[keys[i]] = framebuffer;
+            self.gl.bindFramebuffer(self.gl.FRAMEBUFFER, framebuffer);
+          }
+        } else if (params.renderToTexture===true) {
+          texture = new webgl.Texture(self.gl, 0, null, self.canvas.width, self.canvas.height, {
+            format: self.gl.RGB
+          });
+          textures[keys[i]] = texture;
+        }
+
+        if (texture&&!framebuffer) {
+          framebuffer = new webgl.Framebuffer(self.gl, [texture], undefined, ext['WEBGL_draw_buffers']);
+          framebufferIsTemp = true;
+          framebuffer.bind();
+        }
+
+        if (framebuffer) {
+          self.gl.viewport(0, 0, params.resolution, params.resolution);
+        }
+      }
+      
       // Clear the context.
-      self.gl.clearColor(0, 0, 0, 1);
+      var backgroundColor = params.backgroundColor;
+      self.gl.clearColor(backgroundColor[0]/255.0, backgroundColor[1]/255.0, backgroundColor[2]/255.0, 1.0);
       self.gl.clear(self.gl.COLOR_BUFFER_BIT);
 
       // Look in the direction for this texture.
@@ -12077,9 +12662,10 @@ module.exports = function() {
       self.pStar.use();
       self.pStar.setUniform("uView", "Matrix4fv", false, view);
       self.pStar.setUniform("uProjection", "Matrix4fv", false, projection);
-      self.pStar.setUniform("uModel", "Matrix4fv", false, model);
-      for (j = 0; j < starParams.length; j++) {
+      for (var j = 0; j < starParams.length; j++) {
         var s = starParams[j];
+        glm.mat4.fromTranslation(model, s.pos);
+        self.pStar.setUniform("uModel", "Matrix4fv", false, model);
         self.pStar.setUniform("uPosition", "3fv", s.pos);
         self.pStar.setUniform("uColor", "3fv", s.color);
         self.pStar.setUniform("uSize", "1f", s.size);
@@ -12107,9 +12693,10 @@ module.exports = function() {
       self.pSun.use();
       self.pSun.setUniform("uView", "Matrix4fv", false, view);
       self.pSun.setUniform("uProjection", "Matrix4fv", false, projection);
-      self.pSun.setUniform("uModel", "Matrix4fv", false, model);
       for (j = 0; j < sunParams.length; j++) {
         var sun = sunParams[j];
+        glm.mat4.fromTranslation(model, sun.pos);
+        self.pSun.setUniform("uModel", "Matrix4fv", false, model);
         self.pSun.setUniform("uPosition", "3fv", sun.pos);
         self.pSun.setUniform("uColor", "3fv", sun.color);
         self.pSun.setUniform("uSize", "1f", sun.size);
@@ -12117,6 +12704,12 @@ module.exports = function() {
         self.rSun.render();
       }
 
+      if (framebuffer) {
+        self.gl.bindFramebuffer(self.gl.FRAMEBUFFER, null);
+        if (framebufferIsTemp) {
+          framebuffer.discard();
+        }
+      } else {
       // Create the texture.
       var c = document.createElement("canvas");
       c.width = c.height = params.resolution;
@@ -12124,11 +12717,30 @@ module.exports = function() {
       ctx.drawImage(self.canvas, 0, 0);
       textures[keys[i]] = c;
     }
+    }
 
     return textures;
   };
 
-  self.initialize();
+  self.componentToHex = function(c) {
+    var hex = Math.floor(c).toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+  }
+
+  self.rgbToHex = function(r, g, b) {
+    return "#" + self.componentToHex(r) + self.componentToHex(g) + self.componentToHex(b);
+  }
+
+  self.hexToRgb = function(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? [
+      parseInt(result[1], 16),
+      parseInt(result[2], 16),
+      parseInt(result[3], 16)
+    ] : [1, 1, 1];
+  }
+
+  self.initialize(canvasOrContext);
 };
 
 function buildStar(size, pos, dist, rand) {
@@ -12161,121 +12773,121 @@ function buildStar(size, pos, dist, rand) {
   };
 }
 
-function buildBox(gl, program) {
+function buildBox(gl, radius, program) {
   var position = [
-    -1,
-    -1,
-    -1,
-    1,
-    -1,
-    -1,
-    1,
-    1,
-    -1,
-    -1,
-    -1,
-    -1,
-    1,
-    1,
-    -1,
-    -1,
-    1,
-    -1,
+    -radius,
+    -radius,
+    -radius,
+    radius,
+    -radius,
+    -radius,
+    radius,
+    radius,
+    -radius,
+    -radius,
+    -radius,
+    -radius,
+    radius,
+    radius,
+    -radius,
+    -radius,
+    radius,
+    -radius,
 
-    1,
-    -1,
-    1,
-    -1,
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    1,
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    1,
-    1,
-    1,
+    radius,
+    -radius,
+    radius,
+    -radius,
+    -radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    radius,
+    -radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    radius,
+    radius,
+    radius,
 
-    1,
-    -1,
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    -1,
-    -1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    -1,
+    radius,
+    -radius,
+    -radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    radius,
+    radius,
+    radius,
+    -radius,
+    -radius,
+    radius,
+    radius,
+    radius,
+    radius,
+    radius,
+    -radius,
 
-    -1,
-    -1,
-    1,
-    -1,
-    -1,
-    -1,
-    -1,
-    1,
-    -1,
-    -1,
-    -1,
-    1,
-    -1,
-    1,
-    -1,
-    -1,
-    1,
-    1,
+    -radius,
+    -radius,
+    radius,
+    -radius,
+    -radius,
+    -radius,
+    -radius,
+    radius,
+    -radius,
+    -radius,
+    -radius,
+    radius,
+    -radius,
+    radius,
+    -radius,
+    -radius,
+    radius,
+    radius,
 
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    -1,
-    1,
-    1,
-    1,
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    1,
-    -1,
-    1,
-    1,
+    -radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    radius,
+    -radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    radius,
+    -radius,
+    radius,
+    radius,
 
-    -1,
-    -1,
-    1,
-    1,
-    -1,
-    1,
-    1,
-    -1,
-    -1,
-    -1,
-    -1,
-    1,
-    1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1
+    -radius,
+    -radius,
+    radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    -radius,
+    -radius,
+    -radius,
+    -radius,
+    radius,
+    radius,
+    -radius,
+    -radius,
+    -radius,
+    -radius,
+    -radius
   ];
   var attribs = webgl.buildAttribs(gl, { aPosition: 3 });
   attribs.aPosition.buffer.set(new Float32Array(position));
@@ -12341,44 +12953,24 @@ function shuffle(array) {
   return array;
 }
 
-function componentToHex(c) {
-  var hex = c.toString(16);
-  return hex.length == 1 ? "0" + hex : hex;
-}
-
-function rgbToHex(r, g, b) {
-  return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-}
-
-function hexToRgb(hex) {
-  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? [
-    parseInt(result[1], 16),
-    parseInt(result[2], 16),
-    parseInt(result[3], 16)
-  ] : [1, 1, 1];
-}
-},{"./util.js":31,"./webgl.js":32,"gl-matrix":7,"rng":24}],31:[function(require,module,exports){
-(function (Buffer){
+},{"./glsl/nebula.js":29,"./glsl/point-stars.js":30,"./glsl/star.js":32,"./glsl/sun.js":33,"./util.js":37,"./webgl.js":38,"gl-matrix":7,"rng":24}],37:[function(require,module,exports){
 // jshint -W097
 // jshint undef: true, unused: true
 /* globals require,__dirname,module*/
 
 "use strict";
 
-
 var webgl = require("./webgl.js");
 
 module.exports.loadProgram = function(gl, source) {
-    var noise4d = Buffer("Ly8NCi8vIEdMU0wgdGV4dHVyZWxlc3MgY2xhc3NpYyA0RCBub2lzZSAiY25vaXNlIiwNCi8vIHdpdGggYW4gUlNMLXN0eWxlIHBlcmlvZGljIHZhcmlhbnQgInBub2lzZSIuDQovLyBBdXRob3I6ICBTdGVmYW4gR3VzdGF2c29uIChzdGVmYW4uZ3VzdGF2c29uQGxpdS5zZSkNCi8vIFZlcnNpb246IDIwMTEtMDgtMjINCi8vDQovLyBNYW55IHRoYW5rcyB0byBJYW4gTWNFd2FuIG9mIEFzaGltYSBBcnRzIGZvciB0aGUNCi8vIGlkZWFzIGZvciBwZXJtdXRhdGlvbiBhbmQgZ3JhZGllbnQgc2VsZWN0aW9uLg0KLy8NCi8vIENvcHlyaWdodCAoYykgMjAxMSBTdGVmYW4gR3VzdGF2c29uLiBBbGwgcmlnaHRzIHJlc2VydmVkLg0KLy8gRGlzdHJpYnV0ZWQgdW5kZXIgdGhlIE1JVCBsaWNlbnNlLiBTZWUgTElDRU5TRSBmaWxlLg0KLy8gaHR0cHM6Ly9naXRodWIuY29tL2FzaGltYS93ZWJnbC1ub2lzZQ0KLy8NCg0KdmVjNCBtb2QyODkodmVjNCB4KQ0Kew0KICByZXR1cm4geCAtIGZsb29yKHggKiAoMS4wIC8gMjg5LjApKSAqIDI4OS4wOw0KfQ0KDQp2ZWM0IHBlcm11dGUodmVjNCB4KQ0Kew0KICByZXR1cm4gbW9kMjg5KCgoeCozNC4wKSsxLjApKngpOw0KfQ0KDQp2ZWM0IHRheWxvckludlNxcnQodmVjNCByKQ0Kew0KICByZXR1cm4gMS43OTI4NDI5MTQwMDE1OSAtIDAuODUzNzM0NzIwOTUzMTQgKiByOw0KfQ0KDQp2ZWM0IGZhZGUodmVjNCB0KSB7DQogIHJldHVybiB0KnQqdCoodCoodCo2LjAtMTUuMCkrMTAuMCk7DQp9DQoNCi8vIENsYXNzaWMgUGVybGluIG5vaXNlDQpmbG9hdCBjbm9pc2UodmVjNCBQKQ0Kew0KICB2ZWM0IFBpMCA9IGZsb29yKFApOyAvLyBJbnRlZ2VyIHBhcnQgZm9yIGluZGV4aW5nDQogIHZlYzQgUGkxID0gUGkwICsgMS4wOyAvLyBJbnRlZ2VyIHBhcnQgKyAxDQogIFBpMCA9IG1vZDI4OShQaTApOw0KICBQaTEgPSBtb2QyODkoUGkxKTsNCiAgdmVjNCBQZjAgPSBmcmFjdChQKTsgLy8gRnJhY3Rpb25hbCBwYXJ0IGZvciBpbnRlcnBvbGF0aW9uDQogIHZlYzQgUGYxID0gUGYwIC0gMS4wOyAvLyBGcmFjdGlvbmFsIHBhcnQgLSAxLjANCiAgdmVjNCBpeCA9IHZlYzQoUGkwLngsIFBpMS54LCBQaTAueCwgUGkxLngpOw0KICB2ZWM0IGl5ID0gdmVjNChQaTAueXksIFBpMS55eSk7DQogIHZlYzQgaXowID0gdmVjNChQaTAuenp6eik7DQogIHZlYzQgaXoxID0gdmVjNChQaTEuenp6eik7DQogIHZlYzQgaXcwID0gdmVjNChQaTAud3d3dyk7DQogIHZlYzQgaXcxID0gdmVjNChQaTEud3d3dyk7DQoNCiAgdmVjNCBpeHkgPSBwZXJtdXRlKHBlcm11dGUoaXgpICsgaXkpOw0KICB2ZWM0IGl4eTAgPSBwZXJtdXRlKGl4eSArIGl6MCk7DQogIHZlYzQgaXh5MSA9IHBlcm11dGUoaXh5ICsgaXoxKTsNCiAgdmVjNCBpeHkwMCA9IHBlcm11dGUoaXh5MCArIGl3MCk7DQogIHZlYzQgaXh5MDEgPSBwZXJtdXRlKGl4eTAgKyBpdzEpOw0KICB2ZWM0IGl4eTEwID0gcGVybXV0ZShpeHkxICsgaXcwKTsNCiAgdmVjNCBpeHkxMSA9IHBlcm11dGUoaXh5MSArIGl3MSk7DQoNCiAgdmVjNCBneDAwID0gaXh5MDAgKiAoMS4wIC8gNy4wKTsNCiAgdmVjNCBneTAwID0gZmxvb3IoZ3gwMCkgKiAoMS4wIC8gNy4wKTsNCiAgdmVjNCBnejAwID0gZmxvb3IoZ3kwMCkgKiAoMS4wIC8gNi4wKTsNCiAgZ3gwMCA9IGZyYWN0KGd4MDApIC0gMC41Ow0KICBneTAwID0gZnJhY3QoZ3kwMCkgLSAwLjU7DQogIGd6MDAgPSBmcmFjdChnejAwKSAtIDAuNTsNCiAgdmVjNCBndzAwID0gdmVjNCgwLjc1KSAtIGFicyhneDAwKSAtIGFicyhneTAwKSAtIGFicyhnejAwKTsNCiAgdmVjNCBzdzAwID0gc3RlcChndzAwLCB2ZWM0KDAuMCkpOw0KICBneDAwIC09IHN3MDAgKiAoc3RlcCgwLjAsIGd4MDApIC0gMC41KTsNCiAgZ3kwMCAtPSBzdzAwICogKHN0ZXAoMC4wLCBneTAwKSAtIDAuNSk7DQoNCiAgdmVjNCBneDAxID0gaXh5MDEgKiAoMS4wIC8gNy4wKTsNCiAgdmVjNCBneTAxID0gZmxvb3IoZ3gwMSkgKiAoMS4wIC8gNy4wKTsNCiAgdmVjNCBnejAxID0gZmxvb3IoZ3kwMSkgKiAoMS4wIC8gNi4wKTsNCiAgZ3gwMSA9IGZyYWN0KGd4MDEpIC0gMC41Ow0KICBneTAxID0gZnJhY3QoZ3kwMSkgLSAwLjU7DQogIGd6MDEgPSBmcmFjdChnejAxKSAtIDAuNTsNCiAgdmVjNCBndzAxID0gdmVjNCgwLjc1KSAtIGFicyhneDAxKSAtIGFicyhneTAxKSAtIGFicyhnejAxKTsNCiAgdmVjNCBzdzAxID0gc3RlcChndzAxLCB2ZWM0KDAuMCkpOw0KICBneDAxIC09IHN3MDEgKiAoc3RlcCgwLjAsIGd4MDEpIC0gMC41KTsNCiAgZ3kwMSAtPSBzdzAxICogKHN0ZXAoMC4wLCBneTAxKSAtIDAuNSk7DQoNCiAgdmVjNCBneDEwID0gaXh5MTAgKiAoMS4wIC8gNy4wKTsNCiAgdmVjNCBneTEwID0gZmxvb3IoZ3gxMCkgKiAoMS4wIC8gNy4wKTsNCiAgdmVjNCBnejEwID0gZmxvb3IoZ3kxMCkgKiAoMS4wIC8gNi4wKTsNCiAgZ3gxMCA9IGZyYWN0KGd4MTApIC0gMC41Ow0KICBneTEwID0gZnJhY3QoZ3kxMCkgLSAwLjU7DQogIGd6MTAgPSBmcmFjdChnejEwKSAtIDAuNTsNCiAgdmVjNCBndzEwID0gdmVjNCgwLjc1KSAtIGFicyhneDEwKSAtIGFicyhneTEwKSAtIGFicyhnejEwKTsNCiAgdmVjNCBzdzEwID0gc3RlcChndzEwLCB2ZWM0KDAuMCkpOw0KICBneDEwIC09IHN3MTAgKiAoc3RlcCgwLjAsIGd4MTApIC0gMC41KTsNCiAgZ3kxMCAtPSBzdzEwICogKHN0ZXAoMC4wLCBneTEwKSAtIDAuNSk7DQoNCiAgdmVjNCBneDExID0gaXh5MTEgKiAoMS4wIC8gNy4wKTsNCiAgdmVjNCBneTExID0gZmxvb3IoZ3gxMSkgKiAoMS4wIC8gNy4wKTsNCiAgdmVjNCBnejExID0gZmxvb3IoZ3kxMSkgKiAoMS4wIC8gNi4wKTsNCiAgZ3gxMSA9IGZyYWN0KGd4MTEpIC0gMC41Ow0KICBneTExID0gZnJhY3QoZ3kxMSkgLSAwLjU7DQogIGd6MTEgPSBmcmFjdChnejExKSAtIDAuNTsNCiAgdmVjNCBndzExID0gdmVjNCgwLjc1KSAtIGFicyhneDExKSAtIGFicyhneTExKSAtIGFicyhnejExKTsNCiAgdmVjNCBzdzExID0gc3RlcChndzExLCB2ZWM0KDAuMCkpOw0KICBneDExIC09IHN3MTEgKiAoc3RlcCgwLjAsIGd4MTEpIC0gMC41KTsNCiAgZ3kxMSAtPSBzdzExICogKHN0ZXAoMC4wLCBneTExKSAtIDAuNSk7DQoNCiAgdmVjNCBnMDAwMCA9IHZlYzQoZ3gwMC54LGd5MDAueCxnejAwLngsZ3cwMC54KTsNCiAgdmVjNCBnMTAwMCA9IHZlYzQoZ3gwMC55LGd5MDAueSxnejAwLnksZ3cwMC55KTsNCiAgdmVjNCBnMDEwMCA9IHZlYzQoZ3gwMC56LGd5MDAueixnejAwLnosZ3cwMC56KTsNCiAgdmVjNCBnMTEwMCA9IHZlYzQoZ3gwMC53LGd5MDAudyxnejAwLncsZ3cwMC53KTsNCiAgdmVjNCBnMDAxMCA9IHZlYzQoZ3gxMC54LGd5MTAueCxnejEwLngsZ3cxMC54KTsNCiAgdmVjNCBnMTAxMCA9IHZlYzQoZ3gxMC55LGd5MTAueSxnejEwLnksZ3cxMC55KTsNCiAgdmVjNCBnMDExMCA9IHZlYzQoZ3gxMC56LGd5MTAueixnejEwLnosZ3cxMC56KTsNCiAgdmVjNCBnMTExMCA9IHZlYzQoZ3gxMC53LGd5MTAudyxnejEwLncsZ3cxMC53KTsNCiAgdmVjNCBnMDAwMSA9IHZlYzQoZ3gwMS54LGd5MDEueCxnejAxLngsZ3cwMS54KTsNCiAgdmVjNCBnMTAwMSA9IHZlYzQoZ3gwMS55LGd5MDEueSxnejAxLnksZ3cwMS55KTsNCiAgdmVjNCBnMDEwMSA9IHZlYzQoZ3gwMS56LGd5MDEueixnejAxLnosZ3cwMS56KTsNCiAgdmVjNCBnMTEwMSA9IHZlYzQoZ3gwMS53LGd5MDEudyxnejAxLncsZ3cwMS53KTsNCiAgdmVjNCBnMDAxMSA9IHZlYzQoZ3gxMS54LGd5MTEueCxnejExLngsZ3cxMS54KTsNCiAgdmVjNCBnMTAxMSA9IHZlYzQoZ3gxMS55LGd5MTEueSxnejExLnksZ3cxMS55KTsNCiAgdmVjNCBnMDExMSA9IHZlYzQoZ3gxMS56LGd5MTEueixnejExLnosZ3cxMS56KTsNCiAgdmVjNCBnMTExMSA9IHZlYzQoZ3gxMS53LGd5MTEudyxnejExLncsZ3cxMS53KTsNCg0KICB2ZWM0IG5vcm0wMCA9IHRheWxvckludlNxcnQodmVjNChkb3QoZzAwMDAsIGcwMDAwKSwgZG90KGcwMTAwLCBnMDEwMCksIGRvdChnMTAwMCwgZzEwMDApLCBkb3QoZzExMDAsIGcxMTAwKSkpOw0KICBnMDAwMCAqPSBub3JtMDAueDsNCiAgZzAxMDAgKj0gbm9ybTAwLnk7DQogIGcxMDAwICo9IG5vcm0wMC56Ow0KICBnMTEwMCAqPSBub3JtMDAudzsNCg0KICB2ZWM0IG5vcm0wMSA9IHRheWxvckludlNxcnQodmVjNChkb3QoZzAwMDEsIGcwMDAxKSwgZG90KGcwMTAxLCBnMDEwMSksIGRvdChnMTAwMSwgZzEwMDEpLCBkb3QoZzExMDEsIGcxMTAxKSkpOw0KICBnMDAwMSAqPSBub3JtMDEueDsNCiAgZzAxMDEgKj0gbm9ybTAxLnk7DQogIGcxMDAxICo9IG5vcm0wMS56Ow0KICBnMTEwMSAqPSBub3JtMDEudzsNCg0KICB2ZWM0IG5vcm0xMCA9IHRheWxvckludlNxcnQodmVjNChkb3QoZzAwMTAsIGcwMDEwKSwgZG90KGcwMTEwLCBnMDExMCksIGRvdChnMTAxMCwgZzEwMTApLCBkb3QoZzExMTAsIGcxMTEwKSkpOw0KICBnMDAxMCAqPSBub3JtMTAueDsNCiAgZzAxMTAgKj0gbm9ybTEwLnk7DQogIGcxMDEwICo9IG5vcm0xMC56Ow0KICBnMTExMCAqPSBub3JtMTAudzsNCg0KICB2ZWM0IG5vcm0xMSA9IHRheWxvckludlNxcnQodmVjNChkb3QoZzAwMTEsIGcwMDExKSwgZG90KGcwMTExLCBnMDExMSksIGRvdChnMTAxMSwgZzEwMTEpLCBkb3QoZzExMTEsIGcxMTExKSkpOw0KICBnMDAxMSAqPSBub3JtMTEueDsNCiAgZzAxMTEgKj0gbm9ybTExLnk7DQogIGcxMDExICo9IG5vcm0xMS56Ow0KICBnMTExMSAqPSBub3JtMTEudzsNCg0KICBmbG9hdCBuMDAwMCA9IGRvdChnMDAwMCwgUGYwKTsNCiAgZmxvYXQgbjEwMDAgPSBkb3QoZzEwMDAsIHZlYzQoUGYxLngsIFBmMC55encpKTsNCiAgZmxvYXQgbjAxMDAgPSBkb3QoZzAxMDAsIHZlYzQoUGYwLngsIFBmMS55LCBQZjAuencpKTsNCiAgZmxvYXQgbjExMDAgPSBkb3QoZzExMDAsIHZlYzQoUGYxLnh5LCBQZjAuencpKTsNCiAgZmxvYXQgbjAwMTAgPSBkb3QoZzAwMTAsIHZlYzQoUGYwLnh5LCBQZjEueiwgUGYwLncpKTsNCiAgZmxvYXQgbjEwMTAgPSBkb3QoZzEwMTAsIHZlYzQoUGYxLngsIFBmMC55LCBQZjEueiwgUGYwLncpKTsNCiAgZmxvYXQgbjAxMTAgPSBkb3QoZzAxMTAsIHZlYzQoUGYwLngsIFBmMS55eiwgUGYwLncpKTsNCiAgZmxvYXQgbjExMTAgPSBkb3QoZzExMTAsIHZlYzQoUGYxLnh5eiwgUGYwLncpKTsNCiAgZmxvYXQgbjAwMDEgPSBkb3QoZzAwMDEsIHZlYzQoUGYwLnh5eiwgUGYxLncpKTsNCiAgZmxvYXQgbjEwMDEgPSBkb3QoZzEwMDEsIHZlYzQoUGYxLngsIFBmMC55eiwgUGYxLncpKTsNCiAgZmxvYXQgbjAxMDEgPSBkb3QoZzAxMDEsIHZlYzQoUGYwLngsIFBmMS55LCBQZjAueiwgUGYxLncpKTsNCiAgZmxvYXQgbjExMDEgPSBkb3QoZzExMDEsIHZlYzQoUGYxLnh5LCBQZjAueiwgUGYxLncpKTsNCiAgZmxvYXQgbjAwMTEgPSBkb3QoZzAwMTEsIHZlYzQoUGYwLnh5LCBQZjEuencpKTsNCiAgZmxvYXQgbjEwMTEgPSBkb3QoZzEwMTEsIHZlYzQoUGYxLngsIFBmMC55LCBQZjEuencpKTsNCiAgZmxvYXQgbjAxMTEgPSBkb3QoZzAxMTEsIHZlYzQoUGYwLngsIFBmMS55encpKTsNCiAgZmxvYXQgbjExMTEgPSBkb3QoZzExMTEsIFBmMSk7DQoNCiAgdmVjNCBmYWRlX3h5encgPSBmYWRlKFBmMCk7DQogIHZlYzQgbl8wdyA9IG1peCh2ZWM0KG4wMDAwLCBuMTAwMCwgbjAxMDAsIG4xMTAwKSwgdmVjNChuMDAwMSwgbjEwMDEsIG4wMTAxLCBuMTEwMSksIGZhZGVfeHl6dy53KTsNCiAgdmVjNCBuXzF3ID0gbWl4KHZlYzQobjAwMTAsIG4xMDEwLCBuMDExMCwgbjExMTApLCB2ZWM0KG4wMDExLCBuMTAxMSwgbjAxMTEsIG4xMTExKSwgZmFkZV94eXp3LncpOw0KICB2ZWM0IG5fencgPSBtaXgobl8wdywgbl8xdywgZmFkZV94eXp3LnopOw0KICB2ZWMyIG5feXp3ID0gbWl4KG5fencueHksIG5fencuencsIGZhZGVfeHl6dy55KTsNCiAgZmxvYXQgbl94eXp3ID0gbWl4KG5feXp3LngsIG5feXp3LnksIGZhZGVfeHl6dy54KTsNCiAgcmV0dXJuIDIuMiAqIG5feHl6dzsNCn0NCg0KLy8gQ2xhc3NpYyBQZXJsaW4gbm9pc2UsIHBlcmlvZGljIHZlcnNpb24NCmZsb2F0IHBub2lzZSh2ZWM0IFAsIHZlYzQgcmVwKQ0Kew0KICB2ZWM0IFBpMCA9IG1vZChmbG9vcihQKSwgcmVwKTsgLy8gSW50ZWdlciBwYXJ0IG1vZHVsbyByZXANCiAgdmVjNCBQaTEgPSBtb2QoUGkwICsgMS4wLCByZXApOyAvLyBJbnRlZ2VyIHBhcnQgKyAxIG1vZCByZXANCiAgUGkwID0gbW9kMjg5KFBpMCk7DQogIFBpMSA9IG1vZDI4OShQaTEpOw0KICB2ZWM0IFBmMCA9IGZyYWN0KFApOyAvLyBGcmFjdGlvbmFsIHBhcnQgZm9yIGludGVycG9sYXRpb24NCiAgdmVjNCBQZjEgPSBQZjAgLSAxLjA7IC8vIEZyYWN0aW9uYWwgcGFydCAtIDEuMA0KICB2ZWM0IGl4ID0gdmVjNChQaTAueCwgUGkxLngsIFBpMC54LCBQaTEueCk7DQogIHZlYzQgaXkgPSB2ZWM0KFBpMC55eSwgUGkxLnl5KTsNCiAgdmVjNCBpejAgPSB2ZWM0KFBpMC56enp6KTsNCiAgdmVjNCBpejEgPSB2ZWM0KFBpMS56enp6KTsNCiAgdmVjNCBpdzAgPSB2ZWM0KFBpMC53d3d3KTsNCiAgdmVjNCBpdzEgPSB2ZWM0KFBpMS53d3d3KTsNCg0KICB2ZWM0IGl4eSA9IHBlcm11dGUocGVybXV0ZShpeCkgKyBpeSk7DQogIHZlYzQgaXh5MCA9IHBlcm11dGUoaXh5ICsgaXowKTsNCiAgdmVjNCBpeHkxID0gcGVybXV0ZShpeHkgKyBpejEpOw0KICB2ZWM0IGl4eTAwID0gcGVybXV0ZShpeHkwICsgaXcwKTsNCiAgdmVjNCBpeHkwMSA9IHBlcm11dGUoaXh5MCArIGl3MSk7DQogIHZlYzQgaXh5MTAgPSBwZXJtdXRlKGl4eTEgKyBpdzApOw0KICB2ZWM0IGl4eTExID0gcGVybXV0ZShpeHkxICsgaXcxKTsNCg0KICB2ZWM0IGd4MDAgPSBpeHkwMCAqICgxLjAgLyA3LjApOw0KICB2ZWM0IGd5MDAgPSBmbG9vcihneDAwKSAqICgxLjAgLyA3LjApOw0KICB2ZWM0IGd6MDAgPSBmbG9vcihneTAwKSAqICgxLjAgLyA2LjApOw0KICBneDAwID0gZnJhY3QoZ3gwMCkgLSAwLjU7DQogIGd5MDAgPSBmcmFjdChneTAwKSAtIDAuNTsNCiAgZ3owMCA9IGZyYWN0KGd6MDApIC0gMC41Ow0KICB2ZWM0IGd3MDAgPSB2ZWM0KDAuNzUpIC0gYWJzKGd4MDApIC0gYWJzKGd5MDApIC0gYWJzKGd6MDApOw0KICB2ZWM0IHN3MDAgPSBzdGVwKGd3MDAsIHZlYzQoMC4wKSk7DQogIGd4MDAgLT0gc3cwMCAqIChzdGVwKDAuMCwgZ3gwMCkgLSAwLjUpOw0KICBneTAwIC09IHN3MDAgKiAoc3RlcCgwLjAsIGd5MDApIC0gMC41KTsNCg0KICB2ZWM0IGd4MDEgPSBpeHkwMSAqICgxLjAgLyA3LjApOw0KICB2ZWM0IGd5MDEgPSBmbG9vcihneDAxKSAqICgxLjAgLyA3LjApOw0KICB2ZWM0IGd6MDEgPSBmbG9vcihneTAxKSAqICgxLjAgLyA2LjApOw0KICBneDAxID0gZnJhY3QoZ3gwMSkgLSAwLjU7DQogIGd5MDEgPSBmcmFjdChneTAxKSAtIDAuNTsNCiAgZ3owMSA9IGZyYWN0KGd6MDEpIC0gMC41Ow0KICB2ZWM0IGd3MDEgPSB2ZWM0KDAuNzUpIC0gYWJzKGd4MDEpIC0gYWJzKGd5MDEpIC0gYWJzKGd6MDEpOw0KICB2ZWM0IHN3MDEgPSBzdGVwKGd3MDEsIHZlYzQoMC4wKSk7DQogIGd4MDEgLT0gc3cwMSAqIChzdGVwKDAuMCwgZ3gwMSkgLSAwLjUpOw0KICBneTAxIC09IHN3MDEgKiAoc3RlcCgwLjAsIGd5MDEpIC0gMC41KTsNCg0KICB2ZWM0IGd4MTAgPSBpeHkxMCAqICgxLjAgLyA3LjApOw0KICB2ZWM0IGd5MTAgPSBmbG9vcihneDEwKSAqICgxLjAgLyA3LjApOw0KICB2ZWM0IGd6MTAgPSBmbG9vcihneTEwKSAqICgxLjAgLyA2LjApOw0KICBneDEwID0gZnJhY3QoZ3gxMCkgLSAwLjU7DQogIGd5MTAgPSBmcmFjdChneTEwKSAtIDAuNTsNCiAgZ3oxMCA9IGZyYWN0KGd6MTApIC0gMC41Ow0KICB2ZWM0IGd3MTAgPSB2ZWM0KDAuNzUpIC0gYWJzKGd4MTApIC0gYWJzKGd5MTApIC0gYWJzKGd6MTApOw0KICB2ZWM0IHN3MTAgPSBzdGVwKGd3MTAsIHZlYzQoMC4wKSk7DQogIGd4MTAgLT0gc3cxMCAqIChzdGVwKDAuMCwgZ3gxMCkgLSAwLjUpOw0KICBneTEwIC09IHN3MTAgKiAoc3RlcCgwLjAsIGd5MTApIC0gMC41KTsNCg0KICB2ZWM0IGd4MTEgPSBpeHkxMSAqICgxLjAgLyA3LjApOw0KICB2ZWM0IGd5MTEgPSBmbG9vcihneDExKSAqICgxLjAgLyA3LjApOw0KICB2ZWM0IGd6MTEgPSBmbG9vcihneTExKSAqICgxLjAgLyA2LjApOw0KICBneDExID0gZnJhY3QoZ3gxMSkgLSAwLjU7DQogIGd5MTEgPSBmcmFjdChneTExKSAtIDAuNTsNCiAgZ3oxMSA9IGZyYWN0KGd6MTEpIC0gMC41Ow0KICB2ZWM0IGd3MTEgPSB2ZWM0KDAuNzUpIC0gYWJzKGd4MTEpIC0gYWJzKGd5MTEpIC0gYWJzKGd6MTEpOw0KICB2ZWM0IHN3MTEgPSBzdGVwKGd3MTEsIHZlYzQoMC4wKSk7DQogIGd4MTEgLT0gc3cxMSAqIChzdGVwKDAuMCwgZ3gxMSkgLSAwLjUpOw0KICBneTExIC09IHN3MTEgKiAoc3RlcCgwLjAsIGd5MTEpIC0gMC41KTsNCg0KICB2ZWM0IGcwMDAwID0gdmVjNChneDAwLngsZ3kwMC54LGd6MDAueCxndzAwLngpOw0KICB2ZWM0IGcxMDAwID0gdmVjNChneDAwLnksZ3kwMC55LGd6MDAueSxndzAwLnkpOw0KICB2ZWM0IGcwMTAwID0gdmVjNChneDAwLnosZ3kwMC56LGd6MDAueixndzAwLnopOw0KICB2ZWM0IGcxMTAwID0gdmVjNChneDAwLncsZ3kwMC53LGd6MDAudyxndzAwLncpOw0KICB2ZWM0IGcwMDEwID0gdmVjNChneDEwLngsZ3kxMC54LGd6MTAueCxndzEwLngpOw0KICB2ZWM0IGcxMDEwID0gdmVjNChneDEwLnksZ3kxMC55LGd6MTAueSxndzEwLnkpOw0KICB2ZWM0IGcwMTEwID0gdmVjNChneDEwLnosZ3kxMC56LGd6MTAueixndzEwLnopOw0KICB2ZWM0IGcxMTEwID0gdmVjNChneDEwLncsZ3kxMC53LGd6MTAudyxndzEwLncpOw0KICB2ZWM0IGcwMDAxID0gdmVjNChneDAxLngsZ3kwMS54LGd6MDEueCxndzAxLngpOw0KICB2ZWM0IGcxMDAxID0gdmVjNChneDAxLnksZ3kwMS55LGd6MDEueSxndzAxLnkpOw0KICB2ZWM0IGcwMTAxID0gdmVjNChneDAxLnosZ3kwMS56LGd6MDEueixndzAxLnopOw0KICB2ZWM0IGcxMTAxID0gdmVjNChneDAxLncsZ3kwMS53LGd6MDEudyxndzAxLncpOw0KICB2ZWM0IGcwMDExID0gdmVjNChneDExLngsZ3kxMS54LGd6MTEueCxndzExLngpOw0KICB2ZWM0IGcxMDExID0gdmVjNChneDExLnksZ3kxMS55LGd6MTEueSxndzExLnkpOw0KICB2ZWM0IGcwMTExID0gdmVjNChneDExLnosZ3kxMS56LGd6MTEueixndzExLnopOw0KICB2ZWM0IGcxMTExID0gdmVjNChneDExLncsZ3kxMS53LGd6MTEudyxndzExLncpOw0KDQogIHZlYzQgbm9ybTAwID0gdGF5bG9ySW52U3FydCh2ZWM0KGRvdChnMDAwMCwgZzAwMDApLCBkb3QoZzAxMDAsIGcwMTAwKSwgZG90KGcxMDAwLCBnMTAwMCksIGRvdChnMTEwMCwgZzExMDApKSk7DQogIGcwMDAwICo9IG5vcm0wMC54Ow0KICBnMDEwMCAqPSBub3JtMDAueTsNCiAgZzEwMDAgKj0gbm9ybTAwLno7DQogIGcxMTAwICo9IG5vcm0wMC53Ow0KDQogIHZlYzQgbm9ybTAxID0gdGF5bG9ySW52U3FydCh2ZWM0KGRvdChnMDAwMSwgZzAwMDEpLCBkb3QoZzAxMDEsIGcwMTAxKSwgZG90KGcxMDAxLCBnMTAwMSksIGRvdChnMTEwMSwgZzExMDEpKSk7DQogIGcwMDAxICo9IG5vcm0wMS54Ow0KICBnMDEwMSAqPSBub3JtMDEueTsNCiAgZzEwMDEgKj0gbm9ybTAxLno7DQogIGcxMTAxICo9IG5vcm0wMS53Ow0KDQogIHZlYzQgbm9ybTEwID0gdGF5bG9ySW52U3FydCh2ZWM0KGRvdChnMDAxMCwgZzAwMTApLCBkb3QoZzAxMTAsIGcwMTEwKSwgZG90KGcxMDEwLCBnMTAxMCksIGRvdChnMTExMCwgZzExMTApKSk7DQogIGcwMDEwICo9IG5vcm0xMC54Ow0KICBnMDExMCAqPSBub3JtMTAueTsNCiAgZzEwMTAgKj0gbm9ybTEwLno7DQogIGcxMTEwICo9IG5vcm0xMC53Ow0KDQogIHZlYzQgbm9ybTExID0gdGF5bG9ySW52U3FydCh2ZWM0KGRvdChnMDAxMSwgZzAwMTEpLCBkb3QoZzAxMTEsIGcwMTExKSwgZG90KGcxMDExLCBnMTAxMSksIGRvdChnMTExMSwgZzExMTEpKSk7DQogIGcwMDExICo9IG5vcm0xMS54Ow0KICBnMDExMSAqPSBub3JtMTEueTsNCiAgZzEwMTEgKj0gbm9ybTExLno7DQogIGcxMTExICo9IG5vcm0xMS53Ow0KDQogIGZsb2F0IG4wMDAwID0gZG90KGcwMDAwLCBQZjApOw0KICBmbG9hdCBuMTAwMCA9IGRvdChnMTAwMCwgdmVjNChQZjEueCwgUGYwLnl6dykpOw0KICBmbG9hdCBuMDEwMCA9IGRvdChnMDEwMCwgdmVjNChQZjAueCwgUGYxLnksIFBmMC56dykpOw0KICBmbG9hdCBuMTEwMCA9IGRvdChnMTEwMCwgdmVjNChQZjEueHksIFBmMC56dykpOw0KICBmbG9hdCBuMDAxMCA9IGRvdChnMDAxMCwgdmVjNChQZjAueHksIFBmMS56LCBQZjAudykpOw0KICBmbG9hdCBuMTAxMCA9IGRvdChnMTAxMCwgdmVjNChQZjEueCwgUGYwLnksIFBmMS56LCBQZjAudykpOw0KICBmbG9hdCBuMDExMCA9IGRvdChnMDExMCwgdmVjNChQZjAueCwgUGYxLnl6LCBQZjAudykpOw0KICBmbG9hdCBuMTExMCA9IGRvdChnMTExMCwgdmVjNChQZjEueHl6LCBQZjAudykpOw0KICBmbG9hdCBuMDAwMSA9IGRvdChnMDAwMSwgdmVjNChQZjAueHl6LCBQZjEudykpOw0KICBmbG9hdCBuMTAwMSA9IGRvdChnMTAwMSwgdmVjNChQZjEueCwgUGYwLnl6LCBQZjEudykpOw0KICBmbG9hdCBuMDEwMSA9IGRvdChnMDEwMSwgdmVjNChQZjAueCwgUGYxLnksIFBmMC56LCBQZjEudykpOw0KICBmbG9hdCBuMTEwMSA9IGRvdChnMTEwMSwgdmVjNChQZjEueHksIFBmMC56LCBQZjEudykpOw0KICBmbG9hdCBuMDAxMSA9IGRvdChnMDAxMSwgdmVjNChQZjAueHksIFBmMS56dykpOw0KICBmbG9hdCBuMTAxMSA9IGRvdChnMTAxMSwgdmVjNChQZjEueCwgUGYwLnksIFBmMS56dykpOw0KICBmbG9hdCBuMDExMSA9IGRvdChnMDExMSwgdmVjNChQZjAueCwgUGYxLnl6dykpOw0KICBmbG9hdCBuMTExMSA9IGRvdChnMTExMSwgUGYxKTsNCg0KICB2ZWM0IGZhZGVfeHl6dyA9IGZhZGUoUGYwKTsNCiAgdmVjNCBuXzB3ID0gbWl4KHZlYzQobjAwMDAsIG4xMDAwLCBuMDEwMCwgbjExMDApLCB2ZWM0KG4wMDAxLCBuMTAwMSwgbjAxMDEsIG4xMTAxKSwgZmFkZV94eXp3LncpOw0KICB2ZWM0IG5fMXcgPSBtaXgodmVjNChuMDAxMCwgbjEwMTAsIG4wMTEwLCBuMTExMCksIHZlYzQobjAwMTEsIG4xMDExLCBuMDExMSwgbjExMTEpLCBmYWRlX3h5encudyk7DQogIHZlYzQgbl96dyA9IG1peChuXzB3LCBuXzF3LCBmYWRlX3h5encueik7DQogIHZlYzIgbl95encgPSBtaXgobl96dy54eSwgbl96dy56dywgZmFkZV94eXp3LnkpOw0KICBmbG9hdCBuX3h5encgPSBtaXgobl95encueCwgbl95encueSwgZmFkZV94eXp3LngpOw0KICByZXR1cm4gMi4yICogbl94eXp3Ow0KfQ0K","base64");
+    var noise4d = require("./glsl/classic-noise-4d.snip.js");
     source = source.replace("__noise4d__", noise4d);
     source = source.split("__split__");
     var program = new webgl.Program(gl, source[0], source[1]);
     return program;
 };
 
-}).call(this,require("buffer").Buffer)
-},{"./webgl.js":32,"buffer":2}],32:[function(require,module,exports){
+},{"./glsl/classic-noise-4d.snip.js":28,"./webgl.js":38}],38:[function(require,module,exports){
 
 /*...........................................................................*/
 function buildAttribs(gl, layout) {
@@ -12392,7 +12984,14 @@ function buildAttribs(gl, layout) {
     return attribs;
 }
 
+function discardAttribs(attribs) {
+    for (var key in attribs) {
+        attribs[key].buffer.discard();
+    }
+}
+
 module.exports.buildAttribs = buildAttribs;
+module.exports.discardAttribs = discardAttribs;
 
 
 /*...........................................................................*/
@@ -12422,11 +13021,11 @@ function Framebuffer(gl, color, depth, ext) {
         if (color.length > 1) {
             var drawBuffers = [];
             for (var i = 0; i < color.length; i++) {
-                drawBuffers.push(ext["COLOR_ATTACHMENT" + i + "_WEBGL"]);
+                drawBuffers.push(gl["COLOR_ATTACHMENT" + i]||ext["COLOR_ATTACHMENT" + i + "_WEBGL"]);
             }
-            ext.drawBuffersWEBGL(drawBuffers);
+            (gl.drawBuffers||ext.drawBuffersWEBGL)(drawBuffers);
             for (var i = 0; i < color.length; i++) {
-                gl.framebufferTexture2D(gl.FRAMEBUFFER, ext["COLOR_ATTACHMENT" + i + "_WEBGL"],
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl["COLOR_ATTACHMENT" + i]||ext["COLOR_ATTACHMENT" + i + "_WEBGL"],
                     gl.TEXTURE_2D, color[i].texture, 0);
             }
         } else {
@@ -12436,6 +13035,10 @@ function Framebuffer(gl, color, depth, ext) {
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depth.texture, 0);
         }
     };
+
+    self.discard = function() {
+        gl.deleteFramebuffer(self.fb);
+    }
 
     self.bind = function() {
         gl.bindFramebuffer(gl.FRAMEBUFFER, self.fb);
@@ -12467,7 +13070,11 @@ function Texture(gl, index, data, width, height, options) {
         self.activate();
         self.texture = gl.createTexture();
         self.bind();
-        gl.texImage2D(options.target, 0, options.internalFormat, options.format, options.type, data);
+        if (data) {
+            gl.texImage2D(options.target, 0, options.internalFormat, options.format, options.type, data);
+        } else {
+            gl.texImage2D(options.target, 0, options.internalFormat, width, height, 0, options.format, options.type, data);
+        }
         gl.texParameteri(options.target, gl.TEXTURE_MAG_FILTER, options.mag);
         gl.texParameteri(options.target, gl.TEXTURE_MIN_FILTER, options.min);
         gl.texParameteri(options.target, gl.TEXTURE_WRAP_S, options.wraps);
@@ -12475,6 +13082,10 @@ function Texture(gl, index, data, width, height, options) {
         if (options.mag != gl.NEAREST || options.min != gl.NEAREST) {
             gl.generateMipmap(options.target);
         }
+    }
+
+    self.discard = function() {
+        gl.deleteTexture(self.texture);
     }
 
     self.bind = function() {
@@ -12505,6 +13116,10 @@ function GLBuffer(gl) {
 
     self.initialize = function() {
         self.buffer = gl.createBuffer();
+    }
+
+    self.discard = function() {
+        gl.deleteBuffer(self.buffer);
     }
 
     self.bind = function() {
@@ -12606,16 +13221,22 @@ function Program(gl, vertexSource, fragmentSource) {
         self.uniforms = self.gatherUniforms();
     }
 
+    self.discard = function() {
+        gl.deleteProgram(self.program);
+        gl.deleteShader(self.vertexShader);
+        gl.deleteShader(self.fragmentShader);
+    }
+
     self.use = function() {
         gl.useProgram(self.program);
     }
 
     self.compileProgram = function(vertexSource, fragmentSource) {
-        var vertexShader = self.compileShader(vertexSource, gl.VERTEX_SHADER);
-        var fragmentShader = self.compileShader(fragmentSource, gl.FRAGMENT_SHADER);
+        this.vertexShader = self.compileShader(vertexSource, gl.VERTEX_SHADER);
+        this.fragmentShader = self.compileShader(fragmentSource, gl.FRAGMENT_SHADER);
         var program = gl.createProgram();
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
+        gl.attachShader(program, this.vertexShader);
+        gl.attachShader(program, this.fragmentShader);
         gl.linkProgram(program);
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
             console.log(gl.getProgramInfoLog(program));
@@ -12696,4 +13317,4 @@ function Program(gl, vertexSource, fragmentSource) {
 /*...........................................................................*/
 module.exports.Program = Program;
 
-},{}]},{},[28]);
+},{}]},{},[34]);

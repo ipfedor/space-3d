@@ -4,7 +4,6 @@
 
 "use strict";
 
-var fs = require("fs");
 var glm = require("gl-matrix");
 var webgl = require("./webgl.js");
 var util = require("./util.js");
@@ -16,7 +15,7 @@ module.exports = function(renderCanvas) {
     self.initialize = function() {
         self.gl = renderCanvas.getContext("webgl");
         self.gl.pixelStorei(self.gl.UNPACK_FLIP_Y_WEBGL, true);
-        self.pSkybox = util.loadProgram(self.gl, fs.readFileSync(__dirname + "/glsl/skybox.glsl", "utf8"));
+        self.pSkybox = util.loadProgram(self.gl, require("./glsl/skybox.js"));
         self.rSkybox = buildQuad(self.gl, self.pSkybox);
         self.textures = {};
     };
