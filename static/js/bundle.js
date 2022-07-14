@@ -11926,9 +11926,8 @@ void main() {
     vec3 posn = normalize(pos);
     float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);
     float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);
-    c += pow(pow(d, uFalloff) * 0.5, 4.0);
-    vec3 color = mix(uColor, vec3(1,1,1), c);
-    gl_FragColor = vec4(color, c);
+    c += pow(pow(d, uFalloff) * 0.5, 2.0);
+    gl_FragColor = vec4(uColor, c);
 }
 `
 
@@ -12473,7 +12472,7 @@ module.exports = function(canvasOrContext = undefined) {
     // Create the nebula, sun, and star renderables.
     self.rNebula = buildBox(self.gl, 1.0, self.pNebula);
     self.rSun = buildBox(self.gl, 0.45, self.pSun);
-    self.rStar = buildBox(self.gl, 0.005, self.pStar);
+    self.rStar = buildBox(self.gl, 0.1, self.pStar);
   };
 
   self.discard = function() {
@@ -12510,12 +12509,12 @@ module.exports = function(canvasOrContext = undefined) {
     var rand = new rng.MT(hashcode(params.seed) + 3000);
     var starParams = [];
     while (params.stars) {
-      var cl = shuffle([1, rand.random(), rand.random()]); // random color stars with one color main 
+      var cl = shuffle([rand.random() * 0.5 + 0.5, rand.random(), rand.random()]); // random color stars with one color main 
       starParams.push({
         pos: randomVec3(rand),
-        color: cl,
-        size: rand.random() * 0.00000002 + 0.000000005,
-        falloff: 1//rand.random() * Math.pow(2,20) + Math.pow(2, 16)
+        uColor: cl,
+        size: rand.random() * 0.00000015 + 0.000000005,
+        falloff: rand.random() * 1024.0 + 128.0
       });
       if (rand.random() < 0.01) {
         break;
@@ -12668,7 +12667,7 @@ module.exports = function(canvasOrContext = undefined) {
         glm.mat4.fromTranslation(model, s.pos);
         self.pStar.setUniform("uModel", "Matrix4fv", false, model);
         self.pStar.setUniform("uPosition", "3fv", s.pos);
-        self.pStar.setUniform("uColor", "3fv", s.color);
+        self.pStar.setUniform("uColor", "3fv", s.uColor);
         self.pStar.setUniform("uSize", "1f", s.size);
         self.pStar.setUniform("uFalloff", "1f", s.falloff);
         self.rStar.render();
