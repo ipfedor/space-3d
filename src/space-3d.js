@@ -54,7 +54,8 @@ module.exports = function(canvasOrContext = undefined) {
     var position = new Float32Array(18 * NSTARS);
     var color = new Float32Array(18 * NSTARS);
     for (var i = 0; i < NSTARS; i++) {
-      var size = 0.05;
+      var size = rand.random() * 0.6;
+      size = Math.abs(size * size * size);
       var pos = glm.vec3.random(glm.vec3.create(), 1.0);
       var star = buildStar(size, pos, 128.0, rand);
       position.set(star.position, i * 18);
@@ -116,7 +117,7 @@ module.exports = function(canvasOrContext = undefined) {
         pos: randomVec3(rand),
         color: cl,
         size: rand.random() * 0.00000002 + 0.000000005,
-        falloff: rand.random() * Math.pow(2,20) + Math.pow(2,16)
+        falloff: rand.random() * Math.pow(2,20) + Math.pow(2, 16)
       });
       if (rand.random() < 0.01) {
         break;
@@ -360,7 +361,7 @@ function buildStar(size, pos, dist, rand) {
 
   var position = [];
 
-  for (var ii = 0; ii < 6; ii++) {
+  for (var ii = 0; ii < vertices.length; ii++) {
     var rot = quatRotFromForward(pos);
     glm.vec3.transformQuat(vertices[ii], vertices[ii], rot);
     vertices[ii][0] += pos[0] * dist;
