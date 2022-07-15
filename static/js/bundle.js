@@ -12508,15 +12508,16 @@ module.exports = function(canvasOrContext = undefined) {
     // Initialize the star parameters.
     var rand = new rng.MT(hashcode(params.seed) + 3000);
     var starParams = [];
+    var mincount = 50; // min bright stars
     while (params.stars) {
       var cl = shuffle([rand.random() * 0.5 + 0.5, rand.random(), rand.random()]); // random color stars with one color main 
       starParams.push({
         pos: randomVec3(rand),
         uColor: cl,
-        size: rand.random() * 0.00000015 + 0.000000005,
-        falloff: rand.random() * 1024.0 + 128.0
+        size: 0.000000005 * (rand.random() * 50.0 + 1.0),
+        falloff: 1024.0 * (rand.random() * 50.0 + 1.0)
       });
-      if (rand.random() < 0.01) {
+      if (mincount-- < 1 && rand.random() < 0.01) {
         break;
       }
     }
@@ -12527,7 +12528,7 @@ module.exports = function(canvasOrContext = undefined) {
     var nebulaParams = [];
     var beginColor = self.hexToRgb(params.nebulaColorBegin);
     var endColor = self.hexToRgb(params.nebulaColorEnd);
-    var countNebulas = Math.floor(2 + rand.random() * 3); // 2 - 4 nebulas
+    var countNebulas = Math.floor(4 + rand.random() * 5); // 4 - 8 nebulas
     if (params.nebulae) {
         for(var ni=0; ni<countNebulas; ni++) {
           var midleColor = [
